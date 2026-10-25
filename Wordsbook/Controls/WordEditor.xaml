@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Wordsbook.Controls.WordEditor"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Wordsbook.ViewModels">
+
+    <Border
+        Background="{ThemeResource DialogBg}"
+        BorderBrush="{ThemeResource DialogStroke}"
+        BorderThickness="1"
+        CornerRadius="{StaticResource RDialog}"
+        Padding="22,16,22,20">
+
+        <!-- 窗口矮或缩放高时卡片会比可视区还高，底部圆角就会被窗口切掉；限高后先滚动。 -->
+        <ScrollViewer
+            HorizontalScrollBarVisibility="Disabled"
+            HorizontalScrollMode="Disabled"
+            VerticalScrollBarVisibility="Auto"
+            VerticalScrollMode="Auto">
+
+            <StackPanel Spacing="9">
+
+                <Grid Margin="0,0,0,4">
+                    <TextBlock
+                        x:Name="TitleText"
+                        HorizontalAlignment="Center"
+                        FontFamily="{StaticResource AppDisplayFont}"
+                        FontSize="17"
+                        FontWeight="SemiBold"
+                        Foreground="{ThemeResource TextPrimary}"
+                        Text="New word" />
+                    <Button
+                        x:Name="CloseButton"
+                        Width="24"
+                        Height="24"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Background="{ThemeResource Accent}"
+                        BorderThickness="0"
+                        Click="OnCancel"
+                        Content="&#xE711;"
+                        FontFamily="{StaticResource AppIconFont}"
+                        FontSize="10"
+                        Foreground="White"
+                        CornerRadius="12">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border
+                                    Background="{TemplateBinding Background}"
+                                    CornerRadius="12">
+                                    <ContentPresenter
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Content="{TemplateBinding Content}" />
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </Grid>
+
+                <Border x:Name="WordHost" Style="{StaticResource PillHost}">
+                    <TextBox
+                        x:Name="WordBox"
+                        FontFamily="{StaticResource AppRoundFont}"
+                        FontSize="15"
+                        FontWeight="SemiBold"
+                        PlaceholderText="word   *"
+                        Style="{StaticResource PillTextBox}" />
+                </Border>
+
+                <Border x:Name="MeaningHost" Style="{StaticResource PillHost}">
+                    <TextBox
+                        x:Name="MeaningBox"
+                        PlaceholderText="Meaning   *"
+                        Style="{StaticResource PillTextBox}" />
+                </Border>
+
+                <Border Style="{StaticResource PillHost}">
+                    <TextBox
+                        x:Name="PronBox"
+                        PlaceholderText="Pronunciation"
+                        Style="{StaticResource PillTextBox}" />
+                </Border>
+
+                <ItemsControl x:Name="RelatedList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:RelatedRow">
+                            <Border Margin="0,0,0,9" Style="{StaticResource PillHost}">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBox
+                                        PlaceholderText="Related"
+                                        Style="{StaticResource PillTextBox}"
+                                        Text="{x:Bind Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Button
+                                        Grid.Column="1"
+                                        Click="OnRemoveRelated"
+                                        Content="&#xE8BB;"
+                                        FontSize="9"
+                                        Style="{StaticResource TinyIconButton}"
+                                        Tag="{x:Bind}"
+                                        VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="9">
+                    <Border Style="{StaticResource PillHost}">
+                        <TextBox
+                            x:Name="AddRelatedBox"
+                            PlaceholderText="Related"
+                            Style="{StaticResource PillTextBox}" />
+                    </Border>
+                    <Button
+                        Grid.Column="1"
+                        Width="34"
+                        Height="34"
+                        Click="OnAddRelated"
+                        Content="&#xE710;"
+                        CornerRadius="17"
+                        FontFamily="{StaticResource AppIconFont}"
+                        FontSize="13"
+                        Style="{StaticResource TinyIconButton}"
+                        VerticalAlignment="Center" />
+                </Grid>
+
+                <Border Style="{StaticResource PillHost}">
+                    <TextBox
+                        x:Name="DescriptionBox"
+                        PlaceholderText="Descriptions"
+                        Style="{StaticResource PillTextBox}" />
+                </Border>
+
+                <Grid x:Name="CategoryHost" RowDefinitions="Auto,Auto" RowSpacing="5">
+                    <TextBlock
+                        FontFamily="{StaticResource AppTextFont}"
+                        FontSize="12"
+                        Foreground="{ThemeResource TextSecondary}"
+                        Text="Categories" />
+                    <ItemsControl x:Name="CategoryChips" Grid.Row="1">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="6" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:CategoryChip">
+                                <ToggleButton
+                                    Height="28"
+                                    Padding="12,0,12,0"
+                                    Background="{ThemeResource FieldBg}"
+                                    BorderThickness="0"
+                                    Content="{x:Bind Name}"
+                                    CornerRadius="14"
+                                    FontFamily="{StaticResource AppTextFont}"
+                                    FontSize="12"
+                                    Foreground="{ThemeResource TextPrimary}"
+                                    IsChecked="{x:Bind On, Mode=TwoWay}"
+                                    Tag="{x:Bind}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+
+                <Grid RowDefinitions="Auto,Auto" RowSpacing="5">
+                    <TextBlock
+                        FontFamily="{StaticResource AppTextFont}"
+                        FontSize="12"
+                        Foreground="{ThemeResource TextSecondary}"
+                        Text="Date" />
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
+                        <Border Width="72" Style="{StaticResource PillHost}">
+                            <TextBox
+                                x:Name="MonthBox"
+                                HorizontalContentAlignment="Center"
+                                PlaceholderText="Mon"
+                                Style="{StaticResource PillTextBox}" />
+                        </Border>
+                        <Border Width="58" Style="{StaticResource PillHost}">
+                            <TextBox
+                                x:Name="DayBox"
+                                HorizontalContentAlignment="Center"
+                                PlaceholderText="DD"
+                                Style="{StaticResource PillTextBox}" />
+                        </Border>
+                        <Border Width="78" Style="{StaticResource PillHost}">
+                            <TextBox
+                                x:Name="YearBox"
+                                HorizontalContentAlignment="Center"
+                                PlaceholderText="YYYY"
+                                Style="{StaticResource PillTextBox}" />
+                        </Border>
+                </StackPanel>
+            </Grid>
+
+            <Grid RowDefinitions="Auto,Auto" RowSpacing="5">
+                <TextBlock
+                    FontFamily="{StaticResource AppTextFont}"
+                    FontSize="12"
+                    Foreground="{ThemeResource TextSecondary}"
+                    Text="Program" />
+                <Border
+                    Grid.Row="1"
+                    Background="{ThemeResource SegmentTrack}"
+                    CornerRadius="17"
+                    Padding="3"
+                    HorizontalAlignment="Left">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton
+                            x:Name="MarkOk"
+                            Content="&#xE73E;"
+                            FontFamily="{StaticResource AppIconFont}"
+                            FontSize="13"
+                            GroupName="Mark"
+                            Style="{StaticResource SegmentItem}" />
+                        <RadioButton
+                            x:Name="MarkUnknown"
+                            Content="?"
+                            FontFamily="{StaticResource AppDisplayFont}"
+                            FontSize="14"
+                            FontWeight="Semibold"
+                            GroupName="Mark"
+                            Style="{StaticResource SegmentItem}" />
+                        <RadioButton
+                            x:Name="MarkWarn"
+                            Content="!"
+                            FontFamily="{StaticResource AppDisplayFont}"
+                            FontSize="14"
+                            FontWeight="Semibold"
+                            GroupName="Mark"
+                            Style="{StaticResource SegmentItem}" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Button
+                x:Name="OkButton"
+                Width="30"
+                Height="30"
+                Margin="0,10,0,0"
+                HorizontalAlignment="Right"
+                Background="#34C759"
+                BorderThickness="0"
+                Click="OnConfirm"
+                Content="&#xE73E;"
+                FontFamily="{StaticResource AppIconFont}"
+                FontSize="12"
+                Foreground="White">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="15">
+                            <ContentPresenter
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Content="{TemplateBinding Content}" />
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+            </StackPanel>
+        </ScrollViewer>
+    </Border>
+</UserControl>

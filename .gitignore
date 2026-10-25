@@ -1,0 +1,16 @@
+# Build output
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.part
+
+# Tools scratch
+tools/*.png
+
+# OS
+Thumbs.db
+desktop.ini

@@ -1,0 +1,750 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="Wordsbook.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Wordsbook.Controls"
+    xmlns:vm="using:Wordsbook.ViewModels">
+
+    <Window.SystemBackdrop>
+        <MicaBackdrop Kind="Base" />
+    </Window.SystemBackdrop>
+
+    <!-- 缩放宿主：窗口给足物理尺寸，RootGrid 反向缩小布局再整体放大渲染 -->
+    <Grid x:Name="ZoomHost" SizeChanged="OnZoomHostResized">
+        <Grid
+            x:Name="RootGrid"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+            Loaded="OnRootLoaded"
+            PointerMoved="OnRootPointerMoved"
+            PointerReleased="OnRootPointerReleased"
+            PreviewKeyDown="OnRootPreviewKeyDown"
+            RenderTransformOrigin="0,0">
+
+            <Grid.RenderTransform>
+                <ScaleTransform x:Name="RootScale" ScaleX="1" ScaleY="1" />
+            </Grid.RenderTransform>
+
+            <Grid.Resources>
+
+                <ItemsPanelTemplate x:Key="WrapPanelTemplate">
+                    <ItemsWrapGrid Orientation="Horizontal" ItemWidth="252" />
+                </ItemsPanelTemplate>
+                <ItemsPanelTemplate x:Key="StackPanelTemplate">
+                    <VirtualizingStackPanel Orientation="Vertical" />
+                </ItemsPanelTemplate>
+
+                <!-- 目录树里的小箭头：独立按钮，避免和“选中”抢一次点击 -->
+                <Style x:Key="ChevronButton" TargetType="Button">
+                    <Setter Property="Width" Value="18" />
+                    <Setter Property="Height" Value="22" />
+                    <Setter Property="Padding" Value="0" />
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="BorderThickness" Value="0" />
+                    <Setter Property="FontFamily" Value="{StaticResource AppIconFont}" />
+                    <Setter Property="FontSize" Value="10" />
+                    <Setter Property="Foreground" Value="{ThemeResource TextSecondary}" />
+                    <Setter Property="VerticalAlignment" Value="Center" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="Button">
+                                <Border
+                                    Background="{TemplateBinding Background}"
+                                    CornerRadius="5">
+                                    <ContentPresenter
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Content="{TemplateBinding Content}" />
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+
+                <!-- 侧栏：日 -->
+                <DataTemplate x:Key="DayTemplate" x:DataType="vm:DayNode">
+                    <ToggleButton
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch"
+                        Margin="20,0,0,0"
+                        Click="OnDayClick"
+                        IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
+                        Style="{StaticResource SidebarRow}"
+                        Tag="{x:Bind Key}">
+                        <Grid ColumnDefinitions="16,*,Auto">
+                            <TextBlock
+                                FontFamily="{StaticResource AppTextFont}"
+                                FontSize="12"
+                                Foreground="{ThemeResource TextTertiary}"
+                                Text="–"
+                                VerticalAlignment="Center" />
+                            <TextBlock
+                                Grid.Column="1"
+                                FontSize="13"
+                                Foreground="{ThemeResource TextPrimary}"
+                                Text="{x:Bind Label, Mode=OneWay}"
+                                TextTrimming="CharacterEllipsis"
+                                VerticalAlignment="Center" />
+                            <TextBlock
+                                Grid.Column="2"
+                                FontFamily="{StaticResource AppDisplayFont}"
+                                FontSize="13"
+                                FontWeight="Medium"
+                                Foreground="{ThemeResource Accent}"
+                                Text="{x:Bind Count, Mode=OneWay}"
+                                VerticalAlignment="Center" />
+                        </Grid>
+                    </ToggleButton>
+                </DataTemplate>
+
+                <!-- 侧栏：年月 -->
+                <DataTemplate x:Key="MonthTemplate" x:DataType="vm:MonthNode">
+                    <StackPanel>
+                        <Grid Margin="6,0,0,0">
+                            <ToggleButton
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Stretch"
+                                Click="OnMonthClick"
+                                IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
+                                Style="{StaticResource SidebarRow}"
+                                Tag="{x:Bind Key}">
+                                <Grid ColumnDefinitions="16,*,Auto,24">
+                                    <Ellipse
+                                        Width="6"
+                                        Height="6"
+                                        Fill="{ThemeResource Accent}"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        FontSize="13"
+                                        Foreground="{ThemeResource TextPrimary}"
+                                        Text="{x:Bind Label, Mode=OneWay}"
+                                        VerticalAlignment="Center" />
+                                    <TextBlock
+                                        Grid.Column="2"
+                                        Margin="0,0,4,0"
+                                        FontFamily="{StaticResource AppDisplayFont}"
+                                        FontSize="12"
+                                        FontWeight="Medium"
+                                        Foreground="{ThemeResource TextSecondary}"
+                                        Text="{x:Bind Stat, Mode=OneWay}"
+                                        VerticalAlignment="Center" />
+                                </Grid>
+                            </ToggleButton>
+                            <Button
+                                Width="18"
+                                Margin="0,0,3,0"
+                                HorizontalAlignment="Right"
+                                Click="OnMonthChevron"
+                                Content="{x:Bind Chevron, Mode=OneWay}"
+                                Style="{StaticResource ChevronButton}"
+                                Tag="{x:Bind Key}" />
+                        </Grid>
+                        <ItemsControl
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            Margin="6,0,0,0"
+                            ItemTemplate="{StaticResource DayTemplate}"
+                            ItemsSource="{x:Bind Days}"
+                            Visibility="{x:Bind ChildrenVisibility, Mode=OneWay}" />
+                    </StackPanel>
+                </DataTemplate>
+
+                <!-- 侧栏：语言 -->
+                <DataTemplate x:Key="LangTemplate" x:DataType="vm:LangNode">
+                    <StackPanel>
+                        <Grid>
+                            <ToggleButton
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Stretch"
+                                Click="OnLanguageClick"
+                                IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
+                                RightTapped="OnLanguageRightTapped"
+                                Style="{StaticResource SidebarRow}"
+                                Tag="{x:Bind Id}">
+                                <Grid ColumnDefinitions="28,*,Auto,24">
+                                    <ContentControl
+                                        Content="{x:Bind FlagVisual, Mode=OneWay}"
+                                        IsTabStop="False"
+                                        Padding="0"
+                                        VerticalAlignment="Center" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        FontFamily="{StaticResource AppDisplayFont}"
+                                        FontSize="14"
+                                        FontWeight="Medium"
+                                        Foreground="{ThemeResource TextPrimary}"
+                                        Text="{x:Bind Name, Mode=OneWay}"
+                                        TextTrimming="CharacterEllipsis"
+                                        VerticalAlignment="Center" />
+                                    <TextBlock
+                                        Grid.Column="2"
+                                        Margin="0,0,4,0"
+                                        FontFamily="{StaticResource AppDisplayFont}"
+                                        FontSize="13"
+                                        FontWeight="Medium"
+                                        Foreground="{ThemeResource TextPrimary}"
+                                        Text="{x:Bind Count, Mode=OneWay}"
+                                        VerticalAlignment="Center" />
+                                </Grid>
+                            </ToggleButton>
+                            <!-- 叠在整行之上而不是塞进 ToggleButton：嵌进去的按钮拿不到点击 -->
+                            <Button
+                                Width="18"
+                                Margin="0,0,3,0"
+                                HorizontalAlignment="Right"
+                                Click="OnLanguageChevron"
+                                Content="{x:Bind Chevron, Mode=OneWay}"
+                                Style="{StaticResource ChevronButton}"
+                                Tag="{x:Bind Id}" />
+                        </Grid>
+                        <ItemsControl
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            Margin="8,0,0,0"
+                            ItemTemplate="{StaticResource MonthTemplate}"
+                            ItemsSource="{x:Bind Months}"
+                            Visibility="{x:Bind ChildrenVisibility, Mode=OneWay}" />
+                    </StackPanel>
+                </DataTemplate>
+
+                <!-- 侧栏：分类 -->
+                <DataTemplate x:Key="CategoryTemplate" x:DataType="vm:CategoryNode">
+                    <ToggleButton
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch"
+                        Margin="20,0,0,0"
+                        Click="OnCategoryClick"
+                        IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
+                        Style="{StaticResource SidebarRow}"
+                        Tag="{x:Bind Id}">
+                        <Grid ColumnDefinitions="20,*,Auto">
+                            <TextBlock
+                                FontFamily="{StaticResource AppIconFont}"
+                                FontSize="12"
+                                Foreground="{ThemeResource TextTertiary}"
+                                Text="&#xE8EC;"
+                                VerticalAlignment="Center" />
+                            <TextBlock
+                                Grid.Column="1"
+                                FontSize="13"
+                                Foreground="{ThemeResource TextPrimary}"
+                                Text="{x:Bind Name, Mode=OneWay}"
+                                TextTrimming="CharacterEllipsis"
+                                VerticalAlignment="Center" />
+                            <TextBlock
+                                Grid.Column="2"
+                                FontFamily="{StaticResource AppDisplayFont}"
+                                FontSize="13"
+                                FontWeight="Medium"
+                                Foreground="{ThemeResource Accent}"
+                                Text="{x:Bind Count, Mode=OneWay}"
+                                VerticalAlignment="Center" />
+                        </Grid>
+                    </ToggleButton>
+                </DataTemplate>
+
+                <DataTemplate x:Key="CategoryGroupTemplate" x:DataType="vm:CategoryGroupNode">
+                    <StackPanel>
+                        <!-- 分组行整行可点，箭头只是状态指示，所以不另设按钮 -->
+                        <ToggleButton
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            Click="OnCategoryGroupChevron"
+                            IsChecked="False"
+                            Style="{StaticResource SidebarRow}"
+                            Tag="{x:Bind Id}">
+                            <Grid ColumnDefinitions="28,*,Auto,24">
+                                <ContentControl
+                                    Content="{x:Bind FlagVisual, Mode=OneWay}"
+                                    IsTabStop="False"
+                                    Padding="0"
+                                    VerticalAlignment="Center" />
+                                <TextBlock
+                                    Grid.Column="1"
+                                    FontSize="13"
+                                    Foreground="{ThemeResource TextSecondary}"
+                                    Text="{x:Bind Name, Mode=OneWay}"
+                                    TextTrimming="CharacterEllipsis"
+                                    VerticalAlignment="Center" />
+                                <TextBlock
+                                    Grid.Column="3"
+                                    FontFamily="{StaticResource AppIconFont}"
+                                    FontSize="10"
+                                    Foreground="{ThemeResource TextSecondary}"
+                                    Text="{x:Bind Chevron, Mode=OneWay}"
+                                    VerticalAlignment="Center" />
+                            </Grid>
+                        </ToggleButton>
+                        <ItemsControl
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            Margin="6,0,0,0"
+                            ItemTemplate="{StaticResource CategoryTemplate}"
+                            ItemsSource="{x:Bind Items}"
+                            Visibility="{x:Bind ChildrenVisibility, Mode=OneWay}" />
+                    </StackPanel>
+                </DataTemplate>
+
+                <!-- 单词：网格卡片 -->
+                <DataTemplate x:Key="GridCardTemplate" x:DataType="vm:WordView">
+                    <Grid
+                        Width="236"
+                        Margin="0,0,16,16"
+                        RightTapped="OnCardRightTapped">
+                        <Border Style="{StaticResource WordCard}" Visibility="{x:Bind CardVisibility}">
+                            <Grid>
+                                <StackPanel Spacing="1">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
+                                        <TextBlock
+                                            Style="{StaticResource CardWord}"
+                                            Text="{x:Bind Word}"
+                                            VerticalAlignment="Bottom" />
+                                        <TextBlock
+                                            Grid.Column="1"
+                                            FontFamily="{StaticResource AppTextFont}"
+                                            FontSize="12"
+                                            Foreground="{ThemeResource TextSecondary}"
+                                            Text="{x:Bind Pos}"
+                                            Visibility="{x:Bind Extras}"
+                                            VerticalAlignment="Bottom" />
+                                    </Grid>
+                                    <TextBlock
+                                        Margin="0,2,0,0"
+                                        Style="{StaticResource CardMeaning}"
+                                        Text="{x:Bind Meaning}"
+                                        Visibility="{x:Bind Extras}" />
+                                    <TextBlock
+                                        Margin="0,3,0,0"
+                                        Style="{StaticResource CardMuted}"
+                                        Text="{x:Bind Pronunciation}"
+                                        Visibility="{x:Bind Extras}" />
+                                    <TextBlock
+                                        Margin="0,2,0,0"
+                                        Style="{StaticResource CardRelated}"
+                                        Text="{x:Bind Related}"
+                                        Visibility="{x:Bind Extras}" />
+                                </StackPanel>
+                                <Border
+                                    Background="{x:Bind MarkFill}"
+                                    Style="{StaticResource BadgeCircle}"
+                                    Visibility="{x:Bind Extras}">
+                                    <TextBlock
+                                        FontFamily="{x:Bind MarkFont}"
+                                        FontSize="12"
+                                        FontWeight="Bold"
+                                        Foreground="White"
+                                        HorizontalAlignment="Center"
+                                        Text="{x:Bind MarkGlyph}"
+                                        VerticalAlignment="Center" />
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <Border
+                            Height="118"
+                            PointerEntered="OnAddTileEnter"
+                            PointerExited="OnAddTileExit"
+                            Style="{StaticResource AddTile}"
+                            Tapped="OnAddTileTapped"
+                            Visibility="{x:Bind PlaceholderVisibility}">
+                            <TextBlock
+                                FontFamily="{StaticResource AppIconFont}"
+                                FontSize="22"
+                                Foreground="{ThemeResource Accent}"
+                                HorizontalAlignment="Center"
+                                Text="&#xE710;"
+                                VerticalAlignment="Center" />
+                        </Border>
+                    </Grid>
+                </DataTemplate>
+
+                <!-- 单词：列表行 -->
+                <DataTemplate x:Key="ListRowTemplate" x:DataType="vm:WordView">
+                    <Grid
+                        Margin="0,0,0,6"
+                        RightTapped="OnCardRightTapped">
+                        <Border
+                            Padding="16,9,16,9"
+                            Style="{StaticResource WordCard}"
+                            Visibility="{x:Bind CardVisibility}">
+                            <Grid ColumnDefinitions="230,Auto,*,190,Auto" ColumnSpacing="14">
+                                <TextBlock
+                                    Style="{StaticResource CardWord}"
+                                    Text="{x:Bind Word}"
+                                    TextTrimming="CharacterEllipsis" />
+                                <TextBlock
+                                    Grid.Column="1"
+                                    FontFamily="{StaticResource AppTextFont}"
+                                    FontSize="12"
+                                    Foreground="{ThemeResource TextSecondary}"
+                                    Text="{x:Bind Pos}"
+                                    VerticalAlignment="Center"
+                                    Visibility="{x:Bind Extras}" />
+                                <TextBlock
+                                    Grid.Column="2"
+                                    FontFamily="{StaticResource AppTextFont}"
+                                    FontSize="13"
+                                    Foreground="{ThemeResource TextPrimary}"
+                                    Text="{x:Bind Meaning}"
+                                    TextTrimming="CharacterEllipsis"
+                                    VerticalAlignment="Center"
+                                    Visibility="{x:Bind Extras}" />
+                                <TextBlock
+                                    Grid.Column="3"
+                                    FontFamily="{StaticResource AppTextFont}"
+                                    FontSize="13"
+                                    Foreground="{ThemeResource TextSecondary}"
+                                    Text="{x:Bind Pronunciation}"
+                                    TextTrimming="CharacterEllipsis"
+                                    VerticalAlignment="Center"
+                                    Visibility="{x:Bind Extras}" />
+                                <Border
+                                    Grid.Column="4"
+                                    Background="{x:Bind MarkFill}"
+                                    Style="{StaticResource BadgeCircle}"
+                                    VerticalAlignment="Center"
+                                    Visibility="{x:Bind Extras}">
+                                    <TextBlock
+                                        FontFamily="{x:Bind MarkFont}"
+                                        FontSize="12"
+                                        FontWeight="Bold"
+                                        Foreground="White"
+                                        HorizontalAlignment="Center"
+                                        Text="{x:Bind MarkGlyph}"
+                                        VerticalAlignment="Center" />
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <Border
+                            Height="46"
+                            PointerEntered="OnAddTileEnter"
+                            PointerExited="OnAddTileExit"
+                            Style="{StaticResource AddTile}"
+                            Tapped="OnAddTileTapped"
+                            Visibility="{x:Bind PlaceholderVisibility}">
+                            <TextBlock
+                                Margin="16,0,0,0"
+                                FontFamily="{StaticResource AppIconFont}"
+                                FontSize="16"
+                                Foreground="{ThemeResource Accent}"
+                                HorizontalAlignment="Left"
+                                Text="&#xE710;"
+                                VerticalAlignment="Center" />
+                        </Border>
+                    </Grid>
+                </DataTemplate>
+
+            </Grid.Resources>
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="48" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- 侧栏底色一直顶到窗口上沿，红绿灯浮在它上面 -->
+            <Border
+                x:Name="SidebarSurface"
+                Grid.Row="0"
+                Grid.RowSpan="2"
+                Grid.Column="0"
+                Width="{x:Bind Vm.SidebarWidth, Mode=OneWay}"
+                Background="{ThemeResource SidebarBg}" />
+
+            <Border
+                Grid.Row="0"
+                Grid.RowSpan="2"
+                Grid.Column="1"
+                Background="{ThemeResource ContentBg}" />
+            <Border
+                Grid.Row="1"
+                Grid.Column="1"
+                Width="1"
+                HorizontalAlignment="Left"
+                Background="{ThemeResource Divider}" />
+
+            <!-- ==================== 侧栏 ==================== -->
+            <Grid
+                Grid.Row="1"
+                Grid.Column="0"
+                Visibility="{x:Bind Vm.SidebarVisibility, Mode=OneWay}"
+                Width="{x:Bind Vm.SidebarWidth, Mode=OneWay}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <ScrollViewer
+                    Grid.Row="0"
+                    Padding="14,0,8,0"
+                    HorizontalScrollMode="Disabled"
+                    VerticalScrollBarVisibility="Hidden">
+                    <StackPanel Spacing="1">
+
+                        <Button
+                            x:Name="StartTodayButton"
+                            Height="36"
+                            Margin="2,0,2,10"
+                            VerticalAlignment="Top"
+                            Click="OnStartToday"
+                            Content="Start today"
+                            Style="{StaticResource PrimaryPillButton}"
+                            Visibility="{x:Bind Vm.StartTodayVisibility, Mode=OneWay}" />
+
+                        <Grid Margin="2,4,2,6">
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="Statistic" />
+                            <Button
+                                Width="22"
+                                Height="22"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Click="OnEditLanguages"
+                                Content="&#xE70F;"
+                                FontFamily="{StaticResource AppIconFont}"
+                                FontSize="11"
+                                Style="{StaticResource TinyIconButton}"
+                                ToolTipService.ToolTip="Add / edit languages" />
+                        </Grid>
+
+                        <ItemsControl
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            ItemTemplate="{StaticResource LangTemplate}"
+                            ItemsSource="{x:Bind Vm.LangNodes}" />
+
+                        <Grid Margin="2,16,2,6">
+                            <TextBlock Style="{StaticResource SectionHeader}" Text="Categories" />
+                            <Button
+                                x:Name="AddCategoryButton"
+                                Width="22"
+                                Height="22"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Click="OnAddCategory"
+                                Content="&#xE710;"
+                                FontFamily="{StaticResource AppIconFont}"
+                                FontSize="11"
+                                Style="{StaticResource TinyIconButton}" />
+                        </Grid>
+
+                        <ItemsControl
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            ItemTemplate="{StaticResource CategoryGroupTemplate}"
+                            ItemsSource="{x:Bind Vm.CategoryGroups}" />
+
+                        <TextBlock Margin="2,18,0,8" Style="{StaticResource SectionHeader}" Text="Heat Map" />
+                        <controls:HeatMapView x:Name="Heat" Margin="0,0,2,4" />
+                    </StackPanel>
+                </ScrollViewer>
+
+                <Grid Grid.Row="1" Margin="10,6,16,12">
+                    <Button
+                        Width="30"
+                        Height="30"
+                        HorizontalAlignment="Left"
+                        Click="OnOpenSettings"
+                        Content="&#xE713;"
+                        FontFamily="{StaticResource AppIconFont}"
+                        FontSize="14"
+                        Style="{StaticResource TinyIconButton}"
+                        ToolTipService.ToolTip="Settings" />
+                    <TextBlock
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        FontFamily="{StaticResource AppDisplayFont}"
+                        FontSize="13"
+                        FontWeight="Semibold"
+                        Foreground="{ThemeResource TextPrimary}"
+                        Text="{x:Bind Vm.PerDayLabel, Mode=OneWay}" />
+                </Grid>
+            </Grid>
+
+            <!-- ==================== 单词区 ==================== -->
+            <Grid Grid.Row="1" Grid.Column="1" Margin="26,4,22,14">
+                <ListView
+                    x:Name="WordList"
+                    ItemTemplate="{StaticResource GridCardTemplate}"
+                    IsItemClickEnabled="True"
+                    ItemClick="OnWordItemClick"
+                    ItemsSource="{x:Bind Vm.Words}"
+                    Style="{StaticResource WordListBase}">
+                    <ListView.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <ItemsWrapGrid Orientation="Horizontal" ItemWidth="252" />
+                        </ItemsPanelTemplate>
+                    </ListView.ItemsPanel>
+                </ListView>
+
+                <TextBlock
+                    x:Name="EmptyHint"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    FontFamily="{StaticResource AppTextFont}"
+                    FontSize="14"
+                    Foreground="{ThemeResource TextTertiary}"
+                    Text="No words here yet — click the + card to add one."
+                    Visibility="{x:Bind Vm.EmptyVisibility, Mode=OneWay}" />
+            </Grid>
+
+            <!-- ==================== 标题栏（拖拽区） ==================== -->
+            <Grid x:Name="DragBar" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Grid
+                    Width="{x:Bind Vm.SidebarWidth, Mode=OneWay}"
+                    MinWidth="110">
+                    <StackPanel
+                        x:Name="TrafficLights"
+                        Margin="15,0,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal"
+                        PointerEntered="OnTrafficEntered"
+                        PointerExited="OnTrafficExited"
+                        Spacing="8">
+                        <Button
+                            x:Name="TrafficClose"
+                            Background="#FF5F57"
+                            BorderBrush="#26000000"
+                            Click="OnTrafficClose"
+                            Content="&#xE8BB;"
+                            Style="{StaticResource TrafficButton}" />
+                        <Button
+                            x:Name="TrafficMin"
+                            Background="#FEBC2E"
+                            BorderBrush="#26000000"
+                            Click="OnTrafficMinimize"
+                            Content="&#xE921;"
+                            Style="{StaticResource TrafficButton}" />
+                        <Button
+                            x:Name="TrafficMax"
+                            Background="#28C840"
+                            BorderBrush="#26000000"
+                            Click="OnTrafficMaximize"
+                            Content="&#xE922;"
+                            Style="{StaticResource TrafficButton}" />
+                    </StackPanel>
+                </Grid>
+
+                <StackPanel
+                    Grid.Column="1"
+                    Margin="10,0,0,0"
+                    HorizontalAlignment="Left"
+                    Orientation="Horizontal"
+                    Spacing="10">
+                    <Button
+                        x:Name="SidebarToggleButton"
+                        Click="OnToggleSidebar"
+                        Content="&#xF58C;"
+                        Style="{StaticResource ToolButton}"
+                        ToolTipService.ToolTip="Show / hide sidebar" />
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        Style="{StaticResource PageTitle}"
+                        Text="{x:Bind Vm.HeaderTitle, Mode=OneWay}" />
+                </StackPanel>
+
+                <StackPanel
+                    Grid.Column="1"
+                    Margin="0,0,16,0"
+                    HorizontalAlignment="Right"
+                    Orientation="Horizontal"
+                    Spacing="4">
+
+                    <Border
+                        x:Name="SearchHost"
+                        Width="200"
+                        Margin="0,0,6,0"
+                        Style="{StaticResource PillHost}"
+                        Visibility="Collapsed">
+                        <TextBox
+                            x:Name="SearchBox"
+                            Width="188"
+                            KeyDown="OnSearchKeyDown"
+                            LostFocus="OnSearchLostFocus"
+                            PlaceholderText="word or meaning"
+                            Style="{StaticResource PillTextBox}"
+                            TextChanged="OnSearchChanged" />
+                    </Border>
+
+                    <Button
+                        x:Name="LayoutButton"
+                        Click="OnToggleLayout"
+                        Content="&#xE8FD;"
+                        Style="{StaticResource ToolButton}"
+                        ToolTipService.ToolTip="List / grid view" />
+                    <Button
+                        x:Name="SearchButton"
+                        Click="OnToggleSearch"
+                        Content="&#xE721;"
+                        Style="{StaticResource ToolButton}"
+                        ToolTipService.ToolTip="Search" />
+                    <Button
+                        x:Name="FocusButton"
+                        Click="OnToggleFocus"
+                        Content="&#xE7B3;"
+                        Style="{StaticResource ToolButton}"
+                        ToolTipService.ToolTip="Words only" />
+                </StackPanel>
+            </Grid>
+
+            <!-- 侧栏宽度拖拽条：压在所有内容之上、弹窗遮罩之下 -->
+            <controls:SidebarHandle
+                x:Name="SidebarSplitter"
+                Grid.Row="0"
+                Grid.RowSpan="2"
+                Grid.Column="1"
+                Width="7"
+                Margin="-3,0,0,0"
+                HorizontalAlignment="Left"
+                Background="Transparent"
+                PointerEntered="OnSplitterEnter"
+                PointerExited="OnSplitterExit"
+                PointerPressed="OnSplitterPressed"
+                Visibility="{x:Bind Vm.SidebarVisibility, Mode=OneWay}" />
+
+            <!-- ==================== 编辑弹窗 ==================== -->
+            <Grid
+                x:Name="EditorScrim"
+                Grid.Row="0"
+                Grid.RowSpan="2"
+                Grid.Column="0"
+                Grid.ColumnSpan="2"
+                Background="{ThemeResource ScrimBg}"
+                Tapped="OnScrimTapped"
+                Visibility="Collapsed">
+                <controls:WordEditor
+                    x:Name="Editor"
+                    Width="420"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center" />
+            </Grid>
+
+            <!-- ==================== 设置弹窗 ==================== -->
+            <Grid
+                x:Name="SettingsScrim"
+                Grid.Row="0"
+                Grid.RowSpan="2"
+                Grid.Column="0"
+                Grid.ColumnSpan="2"
+                Background="{ThemeResource ScrimBg}"
+                Tapped="OnSettingsScrimTapped"
+                Visibility="Collapsed">
+                <controls:SettingsPanel
+                    x:Name="Settings"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center" />
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

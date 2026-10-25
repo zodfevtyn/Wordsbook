@@ -1,0 +1,453 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        圆角按 Apple 的比例规则取值：控件越小，半径占短边的比例越高。
+        36 高的按钮取 18（胶囊），120 高的卡片取 18，弹窗取 26。
+        WinUI 的 CornerRadius 渲染的是圆角而非连续曲率（squircle），
+        这里用尺寸比例去逼近观感，同时避免逐帧重算路径带来的性能开销。
+    -->
+    <CornerRadius x:Key="RSmall">8</CornerRadius>
+    <CornerRadius x:Key="RMedium">12</CornerRadius>
+    <CornerRadius x:Key="RCard">18</CornerRadius>
+    <CornerRadius x:Key="RDialog">26</CornerRadius>
+    <CornerRadius x:Key="RPillTall">18</CornerRadius>
+    <CornerRadius x:Key="RPill">17</CornerRadius>
+
+    <FontFamily x:Key="AppTextFont">SF Pro Text</FontFamily>
+    <FontFamily x:Key="AppDisplayFont">SF Pro Display</FontFamily>
+    <FontFamily x:Key="AppRoundFont">SF Pro Rounded</FontFamily>
+    <FontFamily x:Key="AppIconFont">Segoe Fluent Icons</FontFamily>
+
+
+
+    <!-- ================= 文本 ================= -->
+
+    <Style x:Key="PageTitle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppDisplayFont}" />
+        <Setter Property="FontSize" Value="21" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{ThemeResource TextPrimary}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="SectionHeader" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppTextFont}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Semibold" />
+        <Setter Property="Foreground" Value="{ThemeResource TextSecondary}" />
+        <Setter Property="Margin" Value="2,0,0,6" />
+    </Style>
+
+    <Style x:Key="RowLabel" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppTextFont}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Foreground" Value="{ThemeResource TextPrimary}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style x:Key="RowValue" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppTextFont}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Foreground" Value="{ThemeResource Accent}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="CardWord" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppRoundFont}" />
+        <Setter Property="FontSize" Value="19" />
+        <Setter Property="FontWeight" Value="Semibold" />
+        <Setter Property="Foreground" Value="{ThemeResource Accent}" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style x:Key="CardMeaning" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppTextFont}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Foreground" Value="{ThemeResource TextPrimary}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="MaxLines" Value="2" />
+    </Style>
+
+    <Style x:Key="CardMuted" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppTextFont}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Foreground" Value="{ThemeResource TextSecondary}" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style x:Key="CardRelated" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppTextFont}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Foreground" Value="{ThemeResource Accent}" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <!-- ================= 卡片 ================= -->
+
+    <Style x:Key="WordCard" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource CardBg}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource CardStroke}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource RCard}" />
+        <Setter Property="Padding" Value="16,13,16,13" />
+    </Style>
+
+    <!-- ================= 按钮 ================= -->
+
+    <Style x:Key="ToolButton" TargetType="Button">
+        <Setter Property="Width" Value="34" />
+        <Setter Property="Height" Value="34" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="{StaticResource RSmall}" />
+        <Setter Property="Foreground" Value="{ThemeResource TextPrimary}" />
+        <Setter Property="FontFamily" Value="{StaticResource AppIconFont}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border
+                        x:Name="Surface"
+                        Background="{TemplateBinding Background}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                        <ContentPresenter
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Content="{TemplateBinding Content}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="PrimaryPillButton" TargetType="Button">
+        <Setter Property="Height" Value="36" />
+        <Setter Property="Background" Value="{ThemeResource Accent}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="FontFamily" Value="{StaticResource AppDisplayFont}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontWeight" Value="Semibold" />
+        <Setter Property="CornerRadius" Value="{StaticResource RPillTall}" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border
+                        x:Name="Surface"
+                        Background="{TemplateBinding Background}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                        <ContentPresenter
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Content="{TemplateBinding Content}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- macOS 红绿灯：常态是纯色圆点，悬停时才浮出符号 -->
+    <Style x:Key="TrafficButton" TargetType="Button">
+        <Setter Property="Width" Value="13" />
+        <Setter Property="Height" Value="13" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="CornerRadius" Value="7" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="FontFamily" Value="{StaticResource AppIconFont}" />
+        <Setter Property="FontSize" Value="8" />
+        <Setter Property="Foreground" Value="#66000000" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                        <ContentPresenter
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Content="{TemplateBinding Content}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 卡片右下角的 ✓ / ! / ? 角标 -->
+    <Style x:Key="BadgeCircle" TargetType="Border">
+        <Setter Property="Width" Value="22" />
+        <Setter Property="Height" Value="22" />
+        <Setter Property="CornerRadius" Value="11" />
+        <Setter Property="HorizontalAlignment" Value="Right" />
+        <Setter Property="VerticalAlignment" Value="Bottom" />
+        <Setter Property="Background" Value="{ThemeResource Accent}" />
+    </Style>
+
+    <!-- ================= 输入框 ================= -->
+
+    <Style x:Key="PillTextBox" TargetType="TextBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Foreground" Value="{ThemeResource FieldFg}" />
+        <Setter Property="SelectionHighlightColor" Value="{ThemeResource Accent}" />
+        <Setter Property="FontFamily" Value="{StaticResource AppTextFont}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border
+                        Background="Transparent"
+                        BorderThickness="0"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                        <Grid>
+                            <!-- 内容区要跟着 pill 垂直居中：拉伸铺满时文字会整体偏下，光标也会错位 -->
+                            <ScrollViewer
+                                x:Name="ContentElement"
+                                VerticalAlignment="Center"
+                                Padding="{TemplateBinding Padding}"
+                                HorizontalScrollMode="Disabled"
+                                VerticalScrollBarVisibility="Hidden"
+                                VerticalScrollMode="Disabled" />
+                            <TextBlock
+                                x:Name="PlaceholderTextContentPresenter"
+                                Margin="{TemplateBinding Padding}"
+                                VerticalAlignment="Center"
+                                FontFamily="{TemplateBinding FontFamily}"
+                                FontSize="{TemplateBinding FontSize}"
+                                Foreground="{ThemeResource TextControlPlaceholderForeground}"
+                                IsHitTestVisible="False"
+                                Text="{TemplateBinding PlaceholderText}" />
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="PillHost" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource FieldBg}" />
+        <Setter Property="CornerRadius" Value="{StaticResource RPill}" />
+        <Setter Property="Height" Value="34" />
+        <Setter Property="Padding" Value="14,0,14,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- ================= 分段选择（Program ✓ ? !） ================= -->
+
+    <Style x:Key="SegmentItem" TargetType="RadioButton">
+        <Setter Property="FontFamily" Value="{StaticResource AppTextFont}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Foreground" Value="{ThemeResource TextPrimary}" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border
+                        x:Name="Surface"
+                        Height="30"
+                        Background="Transparent"
+                        CornerRadius="15">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Surface" Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource HoverRow}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Surface" Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource HoverRow}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Disabled" />
+                                <VisualState x:Name="Checked">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Surface" Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource CardBg}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPointerOver">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Surface" Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource CardBg}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPressed">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Surface" Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource CardBg}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="CheckedDisabled" />
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <ContentPresenter
+                            Margin="8,0,8,0"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Content="{TemplateBinding Content}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 侧栏目录行：选中态由 IsChecked 驱动，悬停态走 VisualState，避免每行都挂触发器 -->
+    <Style x:Key="SidebarRow" TargetType="ToggleButton">
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Padding" Value="6,0,6,0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="FontFamily" Value="{StaticResource AppTextFont}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Foreground" Value="{ThemeResource TextPrimary}" />
+        <Setter Property="CornerRadius" Value="{StaticResource RSmall}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Grid>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="HoverBg" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.08" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Pressed" />
+                                <VisualState x:Name="Disabled" />
+                                <VisualState x:Name="Checked">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="CheckedBg" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPointerOver">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="CheckedBg" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0" />
+                                        <DoubleAnimation Storyboard.TargetName="HoverBg" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.08" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPressed" />
+                                <VisualState x:Name="CheckedDisabled" />
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <Border
+                            x:Name="HoverBg"
+                            Background="{ThemeResource HoverRow}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Opacity="0" />
+                        <Border
+                            x:Name="CheckedBg"
+                            Background="{ThemeResource SelectedRow}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Opacity="0" />
+                        <Border Padding="{TemplateBinding Padding}">
+                            <ContentPresenter
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Center"
+                                Content="{TemplateBinding Content}" />
+                        </Border>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="AddTile" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource CardBg}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource CardStroke}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource RCard}" />
+        <Setter Property="Opacity" Value="0.55" />
+    </Style>
+
+    <Style x:Key="TinyIconButton" TargetType="Button">
+        <Setter Property="Width" Value="26" />
+        <Setter Property="Height" Value="26" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="7" />
+        <Setter Property="FontFamily" Value="{StaticResource AppIconFont}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{ThemeResource TextSecondary}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border
+                        x:Name="Surface"
+                        Background="{TemplateBinding Background}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                        <ContentPresenter
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Content="{TemplateBinding Content}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ================= 列表容器 ================= -->
+
+    <Style x:Key="PlainItemContainer" TargetType="ListViewItem">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="VerticalContentAlignment" Value="Top" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListViewItem">
+                    <ContentPresenter x:Name="ContentPresenter" ContentTransitions="{x:Null}" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="WordListBase" TargetType="ListView">
+        <Setter Property="IsItemClickEnabled" Value="True" />
+        <Setter Property="SelectionMode" Value="None" />
+        <Setter Property="IsSwipeEnabled" Value="False" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="ItemContainerStyle" Value="{StaticResource PlainItemContainer}" />
+        <Setter Property="ItemContainerTransitions">
+            <Setter.Value>
+                <TransitionCollection>
+                    <AddDeleteThemeTransition />
+                </TransitionCollection>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

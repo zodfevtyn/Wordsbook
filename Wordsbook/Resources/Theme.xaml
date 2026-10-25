@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+            <!--
+                底色几乎不透明，只留一点 Mica 透气。之前 ContentBg 是全透明，
+                深色壁纸会把“白天模式”整片染成灰黑，红绿灯和工具栏图标都看不清。
+            -->
+            <SolidColorBrush x:Key="SidebarBg" Color="#F2ECECEF" />
+            <SolidColorBrush x:Key="ContentBg" Color="#F7F7F7F9" />
+            <SolidColorBrush x:Key="CardBg" Color="#FAFFFFFF" />
+            <SolidColorBrush x:Key="CardStroke" Color="#14000000" />
+            <SolidColorBrush x:Key="TextPrimary" Color="#1C1C1E" />
+            <SolidColorBrush x:Key="TextSecondary" Color="#86868B" />
+            <SolidColorBrush x:Key="TextTertiary" Color="#AEAEB2" />
+            <SolidColorBrush x:Key="Accent" Color="#0A7CFF" />
+            <SolidColorBrush x:Key="FieldBg" Color="#E4E4E8" />
+            <SolidColorBrush x:Key="FieldFg" Color="#1C1C1E" />
+            <SolidColorBrush x:Key="FieldPlaceholder" Color="#9A9A9E" />
+            <SolidColorBrush x:Key="SelectedRow" Color="#DCDCE1" />
+            <SolidColorBrush x:Key="HoverRow" Color="#0C000000" />
+            <SolidColorBrush x:Key="ScrimBg" Color="#55000000" />
+            <SolidColorBrush x:Key="DialogBg" Color="#F7FFFFFF" />
+            <SolidColorBrush x:Key="DialogStroke" Color="#1A000000" />
+            <SolidColorBrush x:Key="SegmentTrack" Color="#E1E1E5" />
+            <SolidColorBrush x:Key="Divider" Color="#1A000000" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="SidebarBg" Color="#F226262A" />
+            <SolidColorBrush x:Key="ContentBg" Color="#F71B1B1F" />
+            <SolidColorBrush x:Key="CardBg" Color="#FA323236" />
+            <SolidColorBrush x:Key="CardStroke" Color="#1FFFFFFF" />
+            <SolidColorBrush x:Key="TextPrimary" Color="#F5F5F7" />
+            <SolidColorBrush x:Key="TextSecondary" Color="#98989D" />
+            <SolidColorBrush x:Key="TextTertiary" Color="#6E6E73" />
+            <SolidColorBrush x:Key="Accent" Color="#0A84FF" />
+            <SolidColorBrush x:Key="FieldBg" Color="#48484A" />
+            <SolidColorBrush x:Key="FieldFg" Color="#F5F5F7" />
+            <SolidColorBrush x:Key="FieldPlaceholder" Color="#8E8E93" />
+            <SolidColorBrush x:Key="SelectedRow" Color="#54545A" />
+            <SolidColorBrush x:Key="HoverRow" Color="#12FFFFFF" />
+            <SolidColorBrush x:Key="ScrimBg" Color="#66000000" />
+            <SolidColorBrush x:Key="DialogBg" Color="#F4313133" />
+            <SolidColorBrush x:Key="DialogStroke" Color="#26FFFFFF" />
+            <SolidColorBrush x:Key="SegmentTrack" Color="#48484A" />
+            <SolidColorBrush x:Key="Divider" Color="#22FFFFFF" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+
+</ResourceDictionary>
