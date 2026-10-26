@@ -17,7 +17,9 @@ public sealed class AppViewModel : NotifyBase
 
     readonly Store _store;
     readonly DispatcherQueueTimer _sidebarTimer;
+    readonly System.Diagnostics.Stopwatch _sidebarClock = new();
     double _sidebarTarget;
+    double _sidebarStart;
     readonly Dictionary<string, LangNode> _lang = [];
     readonly Dictionary<string, MonthNode> _month = [];
     readonly Dictionary<string, DayNode> _day = [];
@@ -37,7 +39,7 @@ public sealed class AppViewModel : NotifyBase
         _store = store;
         _sidebarTimer = queue.CreateTimer();
         _sidebarTimer.Interval = TimeSpan.FromMilliseconds(16);
-        _sidebarTimer.IsRepeating = false;
+        _sidebarTimer.IsRepeating = true;
         _sidebarTimer.Tick += (_, _) => StepSidebar();
         Data = store.Data;
         var today = DateTime.Today;
@@ -49,7 +51,7 @@ public sealed class AppViewModel : NotifyBase
 
     public ObservableCollection<LangNode> LangNodes { get; } = [];
     public ObservableCollection<CategoryGroupNode> CategoryGroups { get; } = [];
-    public ObservableCollection<WordView> Words { get; } = [];
+    public ObservableCollection<WordGroup> WordGroups { get; } = [];
 
     public string? SelectedLangId => _selectedLangId;
     public ScopeKind Scope => _scope;
@@ -70,6 +72,18 @@ public sealed class AppViewModel : NotifyBase
             Data.Settings.GridView = value;
             Raise();
             RebuildWords();
+            _store.RequestSave();
+        }
+    }
+
+    public bool Adaptive
+    {
+        get => Data.Settings.AdaptiveView;
+        set
+        {
+            if (Data.Settings.AdaptiveView == value) return;
+            Data.Settings.AdaptiveView = value;
+            Raise();
             _store.RequestSave();
         }
     }
@@ -100,6 +114,9 @@ public sealed class AppViewModel : NotifyBase
 
     public bool IsSidebarOpen => Data.Settings.SidebarOpen;
 
+    /// <summary>展开时的目标宽度；侧栏收起时用它换算右侧内容在展开态的布局宽度。</summary>
+    public double SidebarOpenWidth => _fullWidth;
+
     public string Theme
     {
         get => Data.Settings.Theme;
@@ -129,7 +146,14 @@ public sealed class AppViewModel : NotifyBase
         _sidebarTarget = open ? _fullWidth : 0;
         if (animate)
         {
-            if (_sidebarWidth != _sidebarTarget) _sidebarTimer.Start();
+            _sidebarStart = _sidebarWidth;
+            _sidebarClock.Restart();
+            if (Math.Abs(_sidebarWidth - _sidebarTarget) < 0.5)
+            {
+                _sidebarTimer.Stop();
+                SidebarWidth = _sidebarTarget;
+            }
+            else _sidebarTimer.Start();
         }
         else
         {
@@ -161,11 +185,17 @@ public sealed class AppViewModel : NotifyBase
 
     void StepSidebar()
     {
-        // 指数趋近：无需记时长，掉帧也不会走形。
-        var delta = (_sidebarTarget - _sidebarWidth) * 0.28;
-        if (Math.Abs(_sidebarTarget - _sidebarWidth) < 1.5) delta = _sidebarTarget - _sidebarWidth;
-        SidebarWidth += delta;
-        if (SidebarWidth != _sidebarTarget) _sidebarTimer.Start();
+        // 固定 220ms + easeInOutCubic：非线性且时长可控，避免指数逼近拖出长尾。
+        const double durationMs = 220;
+        var t = Math.Clamp(_sidebarClock.Elapsed.TotalMilliseconds / durationMs, 0, 1);
+        var eased = t < 0.5 ? 4 * t * t * t : 1 - Math.Pow(-2 * t + 2, 3) / 2;
+        if (t >= 1)
+        {
+            _sidebarTimer.Stop();
+            SidebarWidth = _sidebarTarget;
+            return;
+        }
+        SidebarWidth = _sidebarStart + (_sidebarTarget - _sidebarStart) * eased;
     }
 
     public string HeaderTitle { get; private set; } = "";
@@ -192,7 +222,13 @@ public sealed class AppViewModel : NotifyBase
         if (_selectedLangId is null || Data.Languages.All(l => l.Id != _selectedLangId))
             _selectedLangId = Data.Settings.ActiveLangId ?? Data.Languages.FirstOrDefault()?.Id;
 
-        if (_selectedLangId is not null) _expanded.Add(_selectedLangId);
+        if (_selectedLangId is not null)
+        {
+            _expanded.Add(_selectedLangId);
+            // 分类组默认收起，加完分类后用户会以为没生效，启动时展开当前语言的分组。
+            if (Data.Categories.Any(c => c.LangId == _selectedLangId))
+                _expanded.Add("cat:" + _selectedLangId);
+        }
         _fullWidth = Math.Clamp(Data.Settings.SidebarWidth, MinSidebarWidth, MaxSidebarWidth);
         _sidebarTarget = Data.Settings.SidebarOpen ? _fullWidth : 0;
         // 必须走属性：只写字段的话 x:Bind 收不到通知，列宽会停在初始值 300。
@@ -324,6 +360,9 @@ public sealed class AppViewModel : NotifyBase
         _scope = ScopeKind.Month;
         _scopeKey = monthKey;
         if (!_expanded.Remove(monthKey)) _expanded.Add(monthKey);
+        var d = ParseMonth(monthKey);
+        _heatYear = d.Year;
+        _heatMonth = d.Month;
         Rebuild();
     }
 
@@ -362,7 +401,7 @@ public sealed class AppViewModel : NotifyBase
 
     void RebuildWords()
     {
-        Words.Clear();
+        WordGroups.Clear();
 
         var query = Data.Words.AsEnumerable();
         if (_selectedLangId is not null) query = query.Where(w => w.LangId == _selectedLangId);
@@ -389,8 +428,15 @@ public sealed class AppViewModel : NotifyBase
             .ThenBy(w => w.Word, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
 
-        foreach (var w in list) Words.Add(WordView.From(w, FocusMode));
-        Words.Add(WordView.Placeholder());
+        // 单日视图的日期已经在标题里，分组头留空；语言/月份/分类跨多天，按日期分段。
+        var groups = new List<WordGroup>();
+        foreach (var g in list.Select(w => WordView.From(w, FocusMode)).GroupBy(v => v.Model!.Date))
+            groups.Add(new WordGroup(_scope == ScopeKind.Day ? "" : GroupTitle(g.Key), g));
+
+        if (groups.Count == 0) groups.Add(new WordGroup("", []));
+        groups[^1].Add(WordView.Placeholder());
+
+        foreach (var g in groups) WordGroups.Add(g);
 
         IsEmpty = list.Count == 0;
         HeaderTitle = BuildTitle();
@@ -398,6 +444,10 @@ public sealed class AppViewModel : NotifyBase
         Raise(nameof(EmptyVisibility));
         Raise(nameof(HeaderTitle));
     }
+
+    /// <summary>分组头。月份视图里年份已经在标题上，段头就不再重复。</summary>
+    string GroupTitle(string date) =>
+        ParseDate(date).ToString(_scope == ScopeKind.Month ? "ddd, d MMM" : "ddd, d MMM yyyy", En);
 
     string BuildTitle() => _scope switch
     {
@@ -421,9 +471,12 @@ public sealed class AppViewModel : NotifyBase
             existing.Meaning = entry.Meaning;
             existing.Pronunciation = entry.Pronunciation;
             existing.Description = entry.Description;
+            existing.Nature = entry.Nature;
+            existing.RelatedUsage = entry.RelatedUsage;
             existing.Date = entry.Date;
             existing.Mark = entry.Mark;
             existing.Related = entry.Related;
+            existing.RelatedForms = entry.RelatedForms;
             existing.CategoryIds = entry.CategoryIds;
         }
 
@@ -502,11 +555,10 @@ public sealed class AppViewModel : NotifyBase
 
     public void StepHeat(int delta)
     {
-        var m = _heatMonth + delta + 12;
-        var y = _heatYear + (m - 1) / 12;
-        m = (m - 1) % 12 + 1;
-        _heatYear = y;
-        _heatMonth = m;
+        // 直接加偏移量再取模会在 1 月/12 月边界多跳一年（点一次上一月会到明年）。
+        var target = new DateTime(_heatYear, _heatMonth, 1).AddMonths(delta);
+        _heatYear = target.Year;
+        _heatMonth = target.Month;
         RebuildHeat();
     }
 
@@ -517,7 +569,7 @@ public sealed class AppViewModel : NotifyBase
         var today = DateTime.Today;
         HeatToday = today;
 
-        HeatLabel = first.ToString("MMM", En);
+        HeatLabel = first.ToString("MMM yyyy", En);
         Raise(nameof(HeatLabel));
         Raise(nameof(HeatToday));
 

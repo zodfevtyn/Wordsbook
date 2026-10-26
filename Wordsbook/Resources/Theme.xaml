@@ -26,7 +26,20 @@
             <SolidColorBrush x:Key="DialogBg" Color="#F7FFFFFF" />
             <SolidColorBrush x:Key="DialogStroke" Color="#1A000000" />
             <SolidColorBrush x:Key="SegmentTrack" Color="#E1E1E5" />
+            <SolidColorBrush x:Key="SegmentThumb" Color="#FFFFFFFF" />
             <SolidColorBrush x:Key="Divider" Color="#1A000000" />
+
+            <!-- 日历默认跟随系统强调色（这台机器是橙色），统一成应用蓝 -->
+            <SolidColorBrush x:Key="CalendarViewSelectedBorderBrush" Color="#0A7CFF" />
+            <SolidColorBrush x:Key="CalendarViewSelectedHoverBorderBrush" Color="#0A7CFF" />
+            <SolidColorBrush x:Key="CalendarViewSelectedPressedBorderBrush" Color="#0A7CFF" />
+            <SolidColorBrush x:Key="CalendarViewSelectedForeground" Color="#0A7CFF" />
+            <SolidColorBrush x:Key="CalendarViewSelectedHoverForeground" Color="#0A7CFF" />
+            <SolidColorBrush x:Key="CalendarViewSelectedPressedForeground" Color="#0A7CFF" />
+            <SolidColorBrush x:Key="CalendarViewTodayBackground" Color="#0A7CFF" />
+            <SolidColorBrush x:Key="CalendarViewTodayForeground" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="CalendarViewTodayHoverBackground" Color="#0A7CFF" />
+            <SolidColorBrush x:Key="CalendarViewTodayPressedBackground" Color="#0A7CFF" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
             <SolidColorBrush x:Key="SidebarBg" Color="#F226262A" />
@@ -46,7 +59,19 @@
             <SolidColorBrush x:Key="DialogBg" Color="#F4313133" />
             <SolidColorBrush x:Key="DialogStroke" Color="#26FFFFFF" />
             <SolidColorBrush x:Key="SegmentTrack" Color="#48484A" />
+            <SolidColorBrush x:Key="SegmentThumb" Color="#FF636366" />
             <SolidColorBrush x:Key="Divider" Color="#22FFFFFF" />
+
+            <SolidColorBrush x:Key="CalendarViewSelectedBorderBrush" Color="#0A84FF" />
+            <SolidColorBrush x:Key="CalendarViewSelectedHoverBorderBrush" Color="#0A84FF" />
+            <SolidColorBrush x:Key="CalendarViewSelectedPressedBorderBrush" Color="#0A84FF" />
+            <SolidColorBrush x:Key="CalendarViewSelectedForeground" Color="#0A84FF" />
+            <SolidColorBrush x:Key="CalendarViewSelectedHoverForeground" Color="#0A84FF" />
+            <SolidColorBrush x:Key="CalendarViewSelectedPressedForeground" Color="#0A84FF" />
+            <SolidColorBrush x:Key="CalendarViewTodayBackground" Color="#0A84FF" />
+            <SolidColorBrush x:Key="CalendarViewTodayForeground" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="CalendarViewTodayHoverBackground" Color="#0A84FF" />
+            <SolidColorBrush x:Key="CalendarViewTodayPressedBackground" Color="#0A84FF" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 

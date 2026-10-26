@@ -21,6 +21,10 @@
     <FontFamily x:Key="AppRoundFont">SF Pro Rounded</FontFamily>
     <FontFamily x:Key="AppIconFont">Segoe Fluent Icons</FontFamily>
 
+    <!-- 统一缓动：进场减速、退场加速；只配 Opacity / Transform，交给合成线程 -->
+    <ExponentialEase x:Key="EaseOutExpo" Exponent="4" EasingMode="EaseOut" />
+    <CubicEase x:Key="EaseOutCubic" EasingMode="EaseOut" />
+    <CubicEase x:Key="EaseInCubic" EasingMode="EaseIn" />
 
 
     <!-- ================= 文本 ================= -->
@@ -87,6 +91,24 @@
         <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
 
+    <Style x:Key="CardSectionLabel" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppTextFont}" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="FontWeight" Value="Semibold" />
+        <Setter Property="Foreground" Value="{ThemeResource TextTertiary}" />
+        <Setter Property="CharacterSpacing" Value="40" />
+    </Style>
+
+    <!-- 编辑弹窗里每个输入框左上角的英文小标签 -->
+    <Style x:Key="FieldLabel" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppTextFont}" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="FontWeight" Value="Semibold" />
+        <Setter Property="Foreground" Value="{ThemeResource TextTertiary}" />
+        <Setter Property="CharacterSpacing" Value="50" />
+        <Setter Property="Margin" Value="14,0,0,0" />
+    </Style>
+
     <!-- ================= 卡片 ================= -->
 
     <Style x:Key="WordCard" TargetType="Border">
@@ -117,11 +139,111 @@
                     <Border
                         x:Name="Surface"
                         Background="{TemplateBinding Background}"
-                        CornerRadius="{TemplateBinding CornerRadius}">
-                        <ContentPresenter
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Content="{TemplateBinding Content}" />
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        RenderTransformOrigin="0.5,0.5">
+                        <Border.RenderTransform>
+                            <ScaleTransform x:Name="BtnScale" />
+                        </Border.RenderTransform>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="HoverTint"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="0"
+                                            Duration="0:0:0.12"
+                                            EasingFunction="{StaticResource EaseOutCubic}" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleX"
+                                            To="1"
+                                            Duration="0:0:0.16"
+                                            EasingFunction="{StaticResource EaseOutCubic}" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleY"
+                                            To="1"
+                                            Duration="0:0:0.16"
+                                            EasingFunction="{StaticResource EaseOutCubic}" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="PointerOver">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="HoverTint"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="1"
+                                            Duration="0:0:0.09"
+                                            EasingFunction="{StaticResource EaseOutCubic}" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleX"
+                                            To="1"
+                                            Duration="0:0:0.14"
+                                            EasingFunction="{StaticResource EaseOutCubic}" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleY"
+                                            To="1"
+                                            Duration="0:0:0.14"
+                                            EasingFunction="{StaticResource EaseOutCubic}" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="HoverTint"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="1"
+                                            Duration="0:0:0.06"
+                                            EasingFunction="{StaticResource EaseOutCubic}" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleX"
+                                            To="0.94"
+                                            Duration="0:0:0.08"
+                                            EasingFunction="{StaticResource EaseOutExpo}" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleY"
+                                            To="0.94"
+                                            Duration="0:0:0.08"
+                                            EasingFunction="{StaticResource EaseOutExpo}" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="HoverTint"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="0"
+                                            Duration="0:0:0.1" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleX"
+                                            To="1"
+                                            Duration="0:0:0.1" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleY"
+                                            To="1"
+                                            Duration="0:0:0.1" />
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <Grid>
+                            <Border
+                                x:Name="HoverTint"
+                                Background="{ThemeResource HoverRow}"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                Opacity="0" />
+                            <ContentPresenter
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Content="{TemplateBinding Content}" />
+                        </Grid>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
@@ -143,11 +265,111 @@
                     <Border
                         x:Name="Surface"
                         Background="{TemplateBinding Background}"
-                        CornerRadius="{TemplateBinding CornerRadius}">
-                        <ContentPresenter
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Content="{TemplateBinding Content}" />
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        RenderTransformOrigin="0.5,0.5">
+                        <Border.RenderTransform>
+                            <ScaleTransform x:Name="BtnScale" />
+                        </Border.RenderTransform>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="HoverTint"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="0"
+                                            Duration="0:0:0.12"
+                                            EasingFunction="{StaticResource EaseOutCubic}" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleX"
+                                            To="1"
+                                            Duration="0:0:0.16"
+                                            EasingFunction="{StaticResource EaseOutCubic}" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleY"
+                                            To="1"
+                                            Duration="0:0:0.16"
+                                            EasingFunction="{StaticResource EaseOutCubic}" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="PointerOver">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="HoverTint"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="1"
+                                            Duration="0:0:0.09"
+                                            EasingFunction="{StaticResource EaseOutCubic}" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleX"
+                                            To="1"
+                                            Duration="0:0:0.14"
+                                            EasingFunction="{StaticResource EaseOutCubic}" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleY"
+                                            To="1"
+                                            Duration="0:0:0.14"
+                                            EasingFunction="{StaticResource EaseOutCubic}" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="HoverTint"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="1"
+                                            Duration="0:0:0.06"
+                                            EasingFunction="{StaticResource EaseOutCubic}" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleX"
+                                            To="0.985"
+                                            Duration="0:0:0.09"
+                                            EasingFunction="{StaticResource EaseOutExpo}" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleY"
+                                            To="0.985"
+                                            Duration="0:0:0.09"
+                                            EasingFunction="{StaticResource EaseOutExpo}" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="HoverTint"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="0"
+                                            Duration="0:0:0.1" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleX"
+                                            To="1"
+                                            Duration="0:0:0.1" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleY"
+                                            To="1"
+                                            Duration="0:0:0.1" />
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <Grid>
+                            <Border
+                                x:Name="HoverTint"
+                                Background="{ThemeResource HoverRow}"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                Opacity="0" />
+                            <ContentPresenter
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Content="{TemplateBinding Content}" />
+                        </Grid>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
@@ -246,6 +468,208 @@
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
+    <!-- 编辑弹窗的日期：整条胶囊就是日历弹层的入口 -->
+    <Style x:Key="DateFieldButton" TargetType="Button">
+        <Setter Property="Height" Value="34" />
+        <Setter Property="Padding" Value="14,0,14,0" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Background" Value="{ThemeResource FieldBg}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="{StaticResource RPill}" />
+        <Setter Property="Foreground" Value="{ThemeResource FieldFg}" />
+        <Setter Property="FontFamily" Value="{StaticResource AppTextFont}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border
+                        Background="{TemplateBinding Background}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                        <ContentPresenter
+                            Padding="{TemplateBinding Padding}"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Center"
+                            Content="{TemplateBinding Content}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="DateFlyoutPresenter" TargetType="FlyoutPresenter">
+        <Setter Property="Background" Value="{ThemeResource CardBg}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource CardStroke}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource RCard}" />
+        <Setter Property="Padding" Value="6" />
+    </Style>
+
+    <!-- 分类胶囊：选中态改用应用蓝，默认 ToggleButton 会吃系统强调色（橙色） -->
+    <Style x:Key="CategoryChipButton" TargetType="ToggleButton">
+        <Setter Property="Height" Value="28" />
+        <Setter Property="Padding" Value="12,0,12,0" />
+        <Setter Property="Background" Value="{ThemeResource FieldBg}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="FontFamily" Value="{StaticResource AppTextFont}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{ThemeResource TextPrimary}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border
+                        x:Name="Surface"
+                        Padding="{TemplateBinding Padding}"
+                        Background="{TemplateBinding Background}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Surface" Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource SelectedRow}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Surface" Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource SelectedRow}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Disabled" />
+                                <VisualState x:Name="Checked">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Surface" Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource Accent}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Label" Storyboard.TargetProperty="Foreground">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="White" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPointerOver">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Surface" Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource Accent}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Label" Storyboard.TargetProperty="Foreground">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="White" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPressed">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Surface" Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource Accent}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Label" Storyboard.TargetProperty="Foreground">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="White" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="CheckedDisabled" />
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <ContentPresenter
+                            x:Name="Label"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Content="{TemplateBinding Content}"
+                            FontFamily="{TemplateBinding FontFamily}"
+                            FontSize="{TemplateBinding FontSize}"
+                            Foreground="{TemplateBinding Foreground}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 分类末尾的 + 圆形按钮 -->
+    <Style x:Key="AddChipButton" TargetType="Button">
+        <Setter Property="Width" Value="28" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Background" Value="{ThemeResource Accent}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="FontFamily" Value="{StaticResource AppIconFont}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border
+                        Background="{TemplateBinding Background}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                        <ContentPresenter
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Content="{TemplateBinding Content}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 多行输入（Descriptions）：高度随内容长，超过上限后内部滚动 -->
+    <Style x:Key="NoteHost" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource FieldBg}" />
+        <Setter Property="CornerRadius" Value="{StaticResource RPill}" />
+        <Setter Property="MinHeight" Value="34" />
+        <Setter Property="Padding" Value="14,7,14,7" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+    </Style>
+
+    <Style x:Key="NoteTextBox" TargetType="TextBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Foreground" Value="{ThemeResource FieldFg}" />
+        <Setter Property="SelectionHighlightColor" Value="{ThemeResource Accent}" />
+        <Setter Property="FontFamily" Value="{StaticResource AppTextFont}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinHeight" Value="54" />
+        <Setter Property="MaxHeight" Value="120" />
+        <Setter Property="AcceptsReturn" Value="True" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="VerticalContentAlignment" Value="Top" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border
+                        Background="Transparent"
+                        BorderThickness="0"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                        <Grid>
+                            <ScrollViewer
+                                x:Name="ContentElement"
+                                VerticalAlignment="Stretch"
+                                Padding="{TemplateBinding Padding}"
+                                HorizontalScrollBarVisibility="Disabled"
+                                HorizontalScrollMode="Disabled"
+                                VerticalScrollBarVisibility="Auto"
+                                VerticalScrollMode="Auto" />
+                            <TextBlock
+                                x:Name="PlaceholderTextContentPresenter"
+                                Margin="{TemplateBinding Padding}"
+                                VerticalAlignment="Top"
+                                FontFamily="{TemplateBinding FontFamily}"
+                                FontSize="{TemplateBinding FontSize}"
+                                Foreground="{ThemeResource TextControlPlaceholderForeground}"
+                                IsHitTestVisible="False"
+                                Text="{TemplateBinding PlaceholderText}" />
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ================= 分段选择（Program ✓ ? !） ================= -->
 
     <Style x:Key="SegmentItem" TargetType="RadioButton">
@@ -258,59 +682,87 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <Border
-                        x:Name="Surface"
-                        Height="30"
-                        Background="Transparent"
-                        CornerRadius="15">
-                        <VisualStateManager.VisualStateGroups>
-                            <VisualStateGroup x:Name="CommonStates">
-                                <VisualState x:Name="Normal" />
-                                <VisualState x:Name="PointerOver">
-                                    <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Surface" Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource HoverRow}" />
-                                        </ObjectAnimationUsingKeyFrames>
-                                    </Storyboard>
-                                </VisualState>
-                                <VisualState x:Name="Pressed">
-                                    <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Surface" Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource HoverRow}" />
-                                        </ObjectAnimationUsingKeyFrames>
-                                    </Storyboard>
-                                </VisualState>
-                                <VisualState x:Name="Disabled" />
-                                <VisualState x:Name="Checked">
-                                    <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Surface" Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource CardBg}" />
-                                        </ObjectAnimationUsingKeyFrames>
-                                    </Storyboard>
-                                </VisualState>
-                                <VisualState x:Name="CheckedPointerOver">
-                                    <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Surface" Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource CardBg}" />
-                                        </ObjectAnimationUsingKeyFrames>
-                                    </Storyboard>
-                                </VisualState>
-                                <VisualState x:Name="CheckedPressed">
-                                    <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Surface" Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource CardBg}" />
-                                        </ObjectAnimationUsingKeyFrames>
-                                    </Storyboard>
-                                </VisualState>
-                                <VisualState x:Name="CheckedDisabled" />
-                            </VisualStateGroup>
-                        </VisualStateManager.VisualStateGroups>
+                    <!-- 选中/悬停用独立的内缩胶囊，不再给整格刷底色：整格刷色时靠外的
+                         那个右角会被裁成直角，选中块看起来像一半圆角。 -->
+                    <Grid Height="30">
+                        <Border
+                            x:Name="Hover"
+                            Margin="1"
+                            Background="{ThemeResource HoverRow}"
+                            CornerRadius="14"
+                            Opacity="0" />
+                        <Border
+                            x:Name="Thumb"
+                            Margin="1"
+                            Background="{ThemeResource SegmentThumb}"
+                            CornerRadius="14"
+                            Opacity="0" />
                         <ContentPresenter
                             Margin="8,0,8,0"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             Content="{TemplateBinding Content}" />
-                    </Border>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="Hover"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="1"
+                                            Duration="0" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="Hover"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="1"
+                                            Duration="0" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Disabled" />
+                                <VisualState x:Name="Checked">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="Thumb"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="1"
+                                            Duration="0" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPointerOver">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="Thumb"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="1"
+                                            Duration="0" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPressed">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="Thumb"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="1"
+                                            Duration="0" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="CheckedDisabled">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="Thumb"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="1"
+                                            Duration="0" />
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Grid>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -402,11 +854,111 @@
                     <Border
                         x:Name="Surface"
                         Background="{TemplateBinding Background}"
-                        CornerRadius="{TemplateBinding CornerRadius}">
-                        <ContentPresenter
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Content="{TemplateBinding Content}" />
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        RenderTransformOrigin="0.5,0.5">
+                        <Border.RenderTransform>
+                            <ScaleTransform x:Name="BtnScale" />
+                        </Border.RenderTransform>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="HoverTint"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="0"
+                                            Duration="0:0:0.1"
+                                            EasingFunction="{StaticResource EaseOutCubic}" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleX"
+                                            To="1"
+                                            Duration="0:0:0.14"
+                                            EasingFunction="{StaticResource EaseOutCubic}" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleY"
+                                            To="1"
+                                            Duration="0:0:0.14"
+                                            EasingFunction="{StaticResource EaseOutCubic}" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="PointerOver">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="HoverTint"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="1"
+                                            Duration="0:0:0.08"
+                                            EasingFunction="{StaticResource EaseOutCubic}" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleX"
+                                            To="1"
+                                            Duration="0:0:0.12"
+                                            EasingFunction="{StaticResource EaseOutCubic}" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleY"
+                                            To="1"
+                                            Duration="0:0:0.12"
+                                            EasingFunction="{StaticResource EaseOutCubic}" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="HoverTint"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="1"
+                                            Duration="0:0:0.05"
+                                            EasingFunction="{StaticResource EaseOutCubic}" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleX"
+                                            To="0.9"
+                                            Duration="0:0:0.07"
+                                            EasingFunction="{StaticResource EaseOutExpo}" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleY"
+                                            To="0.9"
+                                            Duration="0:0:0.07"
+                                            EasingFunction="{StaticResource EaseOutExpo}" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="HoverTint"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="0"
+                                            Duration="0:0:0.1" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleX"
+                                            To="1"
+                                            Duration="0:0:0.1" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="BtnScale"
+                                            Storyboard.TargetProperty="ScaleY"
+                                            To="1"
+                                            Duration="0:0:0.1" />
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <Grid>
+                            <Border
+                                x:Name="HoverTint"
+                                Background="{ThemeResource HoverRow}"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                Opacity="0" />
+                            <ContentPresenter
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Content="{TemplateBinding Content}" />
+                        </Grid>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>

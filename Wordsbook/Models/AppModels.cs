@@ -36,6 +36,28 @@ public sealed class Category
     public string Name { get; set; } = "";
 }
 
+/// <summary>原词的一个变体及该变体的使用性质（如 hij / wij）。</summary>
+public sealed class RelatedForm
+{
+    public string Form { get; set; } = "";
+    public string Nature { get; set; } = "";
+
+    /// <summary>把旧数据的 Related + RelatedUsage 按 “ · ” 对齐成逐条变体。</summary>
+    public static List<RelatedForm> Expand(IEnumerable<string> forms, string usage)
+    {
+        var list = forms.Where(f => !string.IsNullOrWhiteSpace(f)).Select(f => f.Trim()).ToList();
+        if (list.Count == 0) return [];
+        if (list.Count == 1) return [new RelatedForm { Form = list[0], Nature = usage.Trim() }];
+
+        var parts = usage.Split('·', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        return list.Select((form, i) => new RelatedForm
+        {
+            Form = form,
+            Nature = i < parts.Length ? parts[i] : "",
+        }).ToList();
+    }
+}
+
 /// <summary>一条单词记录。Date 为 yyyy-MM-dd。</summary>
 public sealed class WordEntry
 {
@@ -45,9 +67,16 @@ public sealed class WordEntry
     public string Meaning { get; set; } = "";
     public string Pronunciation { get; set; } = "";
     public string Description { get; set; } = "";
+
+    /// <summary>原词的性质，如名词的 de / het，显示在词性左侧。</summary>
+    public string Nature { get; set; } = "";
+
+    /// <summary>Related 里那组形式的用法，如 hij / wij，显示在 Related 行最右侧。</summary>
+    public string RelatedUsage { get; set; } = "";
     public string Date { get; set; } = "";
     public int Mark { get; set; }
     public List<string> Related { get; set; } = [];
+    public List<RelatedForm> RelatedForms { get; set; } = [];
     public List<string> CategoryIds { get; set; } = [];
 }
 
@@ -62,6 +91,7 @@ public sealed class AppSettings
 {
     public string? ActiveLangId { get; set; }
     public bool GridView { get; set; } = true;
+    public bool AdaptiveView { get; set; }
     public bool FocusMode { get; set; }
 
     /// <summary>system | light | dark</summary>

@@ -17,6 +17,7 @@ public static class WindowChrome
     const uint SWP_NOSIZE = 0x0001, SWP_NOMOVE = 0x0002, SWP_NOZORDER = 0x0004, SWP_FRAMECHANGED = 0x0020;
 
     const int WM_NCCALCSIZE = 0x0083;
+    const int WM_GETMINMAXINFO = 0x0024;
     const int SM_CXSIZEFRAME = 32, SM_CXPADDEDBORDER = 92;
 
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] static extern IntPtr GetLong(IntPtr hWnd, int index);
@@ -30,6 +31,8 @@ public static class WindowChrome
     [DllImport("user32.dll")] static extern int GetSystemMetricsForDpi(int index, uint dpi);
     [DllImport("user32.dll")] static extern bool IsZoomed(IntPtr hWnd);
     [DllImport("user32.dll")] static extern IntPtr CallWindowProc(IntPtr lpPrev, IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+    [DllImport("user32.dll")] static extern IntPtr MonitorFromWindow(IntPtr hWnd, uint flags);
+    [DllImport("user32.dll")] static extern bool GetMonitorInfo(IntPtr monitor, ref MONITORINFO info);
     [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr hWnd, int attr, out RECT rect, int size);
 
     [StructLayout(LayoutKind.Sequential)] public struct RECT
@@ -40,6 +43,21 @@ public static class WindowChrome
 
     [StructLayout(LayoutKind.Sequential)]
     struct NCCALCSIZE_PARAMS { public RECT rcProposed; public RECT rc1; public RECT rc2; public IntPtr windowPos; }
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct MONITORINFO { public int cbSize; public RECT rcMonitor; public RECT rcWork; public uint flags; }
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct MINMAXINFO
+    {
+        public POINT ptReserved;
+        public POINT ptMaxSize;
+        public POINT ptMaxPosition;
+        public POINT ptMinTrackSize;
+        public POINT ptMaxTrackSize;
+    }
+
+    const uint MONITOR_DEFAULTTONEAREST = 2;
 
     delegate IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
@@ -74,18 +92,38 @@ public static class WindowChrome
 
     static IntPtr Hook(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
     {
+        if (msg == WM_GETMINMAXINFO)
+        {
+            // 无标题栏窗口默认会连任务栏一起最大化，导致客户区按工作区收缩后
+            // 底边空出一条白带。这里把最大化的目标框定在显示器工作区。
+            var mi = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
+            if (GetMonitorInfo(MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST), ref mi))
+            {
+                var info = Marshal.PtrToStructure<MINMAXINFO>(lParam);
+                info.ptMaxPosition.X = mi.rcWork.Left - mi.rcMonitor.Left;
+                info.ptMaxPosition.Y = mi.rcWork.Top - mi.rcMonitor.Top;
+                info.ptMaxSize.X = mi.rcWork.Right - mi.rcWork.Left;
+                info.ptMaxSize.Y = mi.rcWork.Bottom - mi.rcWork.Top;
+                Marshal.StructureToPtr(info, lParam, false);
+            }
+
+            return CallWindowProc(_prevWndProc, hWnd, msg, wParam, lParam);
+        }
+
         if (msg == WM_NCCALCSIZE && wParam != IntPtr.Zero)
         {
             if (!IsZoomed(hWnd)) return IntPtr.Zero;
 
-            // 最大化时仍要按边框内缩，不然内容会被屏幕边缘切掉一圈
-            var p = Marshal.PtrToStructure<NCCALCSIZE_PARAMS>(lParam);
-            var b = Border(hWnd);
-            p.rcProposed.Top += b;
-            p.rcProposed.Left += b;
-            p.rcProposed.Right -= b;
-            p.rcProposed.Bottom -= b;
-            Marshal.StructureToPtr(p, lParam, false);
+            // 最大化时把客户区直接对齐到显示器工作区。沿用窗口边框内缩会在四周
+            // 留下 1px 非客户区，DWM 会把它画成一条白线；直接铺满则没有缝。
+            var info = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
+            if (GetMonitorInfo(MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST), ref info))
+            {
+                var p = Marshal.PtrToStructure<NCCALCSIZE_PARAMS>(lParam);
+                p.rcProposed = info.rcWork;
+                Marshal.StructureToPtr(p, lParam, false);
+            }
+
             return IntPtr.Zero;
         }
 

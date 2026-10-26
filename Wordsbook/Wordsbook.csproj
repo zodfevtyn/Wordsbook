@@ -18,6 +18,7 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <DefaultLanguage>zh-CN</DefaultLanguage>
     <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
+    <Version>0.1.1</Version>
     <!-- 整个项目只在 Windows 上运行，平台分析器对 WinUI 类型的版本判断噪音太大 -->
     <NoWarn>$(NoWarn);CA1416</NoWarn>
     <PublishReadyToRun Condition="'$(Configuration)'=='Debug'">False</PublishReadyToRun>

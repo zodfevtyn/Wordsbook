@@ -29,6 +29,11 @@ public static class Clicker {
 
     public static void MakeAware() { try { SetProcessDpiAwarenessContext(new IntPtr(-4)); } catch { } }
 
+    public static string RectOf(IntPtr hwnd) {
+        RECT r; GetWindowRect(hwnd, out r);
+        return string.Format("{0},{1} {2}x{3}", r.Left, r.Top, r.Right - r.Left, r.Bottom - r.Top);
+    }
+
     public static void Click(IntPtr hwnd, int clientX, int clientY, bool right) {
         RECT r; GetWindowRect(hwnd, out r);
         ShowWindow(hwnd, 9); SwitchToThisWindow(hwnd, true); SetForegroundWindow(hwnd);
@@ -71,4 +76,4 @@ if ($Type -ne "") {
         Start-Sleep -Milliseconds 25
     }
 }
-Write-Output "clicked client ($X,$Y) right=$Right wheel=$Wheel type='$Type'"
+Write-Output "clicked client ($X,$Y) right=$Right wheel=$Wheel type='$Type' rect=$([Clicker]::RectOf($proc.MainWindowHandle))"

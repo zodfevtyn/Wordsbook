@@ -38,9 +38,26 @@ public sealed class WordView : NotifyBase
 
     string _pronunciation = "";
     public string Pronunciation { get => _pronunciation; set => Set(ref _pronunciation, value); }
+    public Visibility PronunciationVisibility => _pronunciation.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+    string _description = "";
+    public string Description { get => _description; set => Set(ref _description, value); }
+    public Visibility DescriptionVisibility => string.IsNullOrWhiteSpace(_description) ? Visibility.Collapsed : Visibility.Visible;
+
+    IReadOnlyList<RelatedForm> _relatedForms = [];
+    public IReadOnlyList<RelatedForm> RelatedForms { get => _relatedForms; set => Set(ref _relatedForms, value); }
+    public Visibility RelatedFormsVisibility => _relatedForms.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
 
     string _related = "";
     public string Related { get => _related; set => Set(ref _related, value); }
+
+    string _nature = "";
+    public string Nature { get => _nature; set => Set(ref _nature, value); }
+    public Visibility NatureVisibility => _nature.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+    string _relatedUsage = "";
+    public string RelatedUsage { get => _relatedUsage; set => Set(ref _relatedUsage, value); }
+    public Visibility RelatedUsageVisibility => _relatedUsage.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
 
 
     Visibility _extras = Visibility.Visible;
@@ -62,7 +79,11 @@ public sealed class WordView : NotifyBase
         var (pos, meaning) = SplitPos(e.Meaning);
         var pron = e.Pronunciation.Trim();
         if (pron.Length > 0 && !pron.StartsWith('/') && !pron.StartsWith('[')) pron = "/" + pron + "/";
-        var related = string.Join("  ", e.Related.Where(r => !string.IsNullOrWhiteSpace(r)));
+        var forms = e.RelatedForms
+            .Where(f => !string.IsNullOrWhiteSpace(f.Form))
+            .Select(f => new RelatedForm { Form = f.Form.Trim(), Nature = f.Nature.Trim() })
+            .ToList();
+        if (forms.Count == 0) forms = RelatedForm.Expand(e.Related, e.RelatedUsage);
 
         return new WordView
         {
@@ -71,7 +92,11 @@ public sealed class WordView : NotifyBase
             Pos = pos,
             Meaning = meaning,
             Pronunciation = pron,
-            Related = related,
+            Description = e.Description.Trim(),
+            RelatedForms = forms,
+            Related = string.Join("  ", forms.Select(f => f.Form)),
+            Nature = e.Nature,
+            RelatedUsage = e.RelatedUsage,
             Extras = focusMode ? Visibility.Collapsed : Visibility.Visible,
             MarkGlyph = e.Mark switch { 0 => Icons.Check, 2 => "!", _ => "?" },
             MarkFont = e.Mark == 0 ? Icon : Display,
@@ -79,7 +104,7 @@ public sealed class WordView : NotifyBase
         };
     }
 
-    static readonly string[] PosTags = ["adj", "adv", "noun", "v", "vt", "vi", "verb", "n", "prep", "conj", "pron", "det", "int", "aux"];
+    static readonly string[] PosTags = ["adj", "adv", "noun", "v", "vt", "vi", "verb", "n", "prep", "conj", "pron", "det", "int", "num", "aux"];
 
     /// <summary>释义常以 "adj. nice" 这类词性前缀开头，拆出来单独显示在词旁。</summary>
     public static (string Pos, string Meaning) SplitPos(string meaning)
