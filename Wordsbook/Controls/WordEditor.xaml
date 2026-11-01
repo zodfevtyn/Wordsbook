@@ -6,12 +6,16 @@
     xmlns:controls="using:Wordsbook.Controls"
     xmlns:vm="using:Wordsbook.ViewModels">
 
+    <!-- 左右不对称是有意的：右边 Padding 给 0，滚动条才能贴到面板右沿（WinUI 的滑块
+         自己还留 ~6px，视觉上就是 macOS 那种贴边细条）；字段原本的右内缩整个挪到下面
+         StackPanel 的 34 上，可视宽度一点没变。底部留 8 是为了让裁剪线落在 26 圆角带里，
+         不至于在面板中间横切一行字。 -->
     <Border
         Background="{ThemeResource DialogBg}"
         BorderBrush="{ThemeResource DialogStroke}"
         BorderThickness="1"
         CornerRadius="{StaticResource RDialog}"
-        Padding="22,16,22,20">
+        Padding="22,16,0,8">
 
         <!-- 窗口矮或缩放高时卡片会比可视区还高，底部圆角就会被窗口切掉；限高后先滚动。 -->
         <ScrollViewer
@@ -20,7 +24,7 @@
             VerticalScrollBarVisibility="Auto"
             VerticalScrollMode="Auto">
 
-            <StackPanel Margin="0,0,12,0" Spacing="10">
+            <StackPanel Margin="0,0,34,12" Spacing="10">
 
                 <Grid Margin="0,0,0,2">
                     <TextBlock
@@ -41,9 +45,9 @@
                         Background="{ThemeResource Accent}"
                         BorderThickness="0"
                         Click="OnCancel"
-                        Content="&#xE711;"
+                        Content="&#x100184;"
                         FontFamily="{StaticResource AppIconFont}"
-                        FontSize="10"
+                        FontSize="11"
                         Foreground="White"
                         CornerRadius="12">
                         <Button.Template>
@@ -135,8 +139,8 @@
                                         Grid.Column="2"
                                         AutomationProperties.Name="Remove variant"
                                         Click="OnRemoveRelated"
-                                        Content="&#xE8BB;"
-                                        FontSize="9"
+                                        Content="&#x100184;"
+                                        FontSize="10"
                                         Style="{StaticResource TinyIconButton}"
                                         Tag="{x:Bind}"
                                         VerticalAlignment="Center" />
@@ -163,7 +167,7 @@
                             Grid.Column="2"
                             AutomationProperties.Name="Add variant"
                             Click="OnAddRelated"
-                            Content="&#xE710;"
+                            Content="&#x10017C;"
                             Style="{StaticResource AddChipButton}"
                             ToolTipService.ToolTip="Add variant"
                             VerticalAlignment="Center" />
@@ -202,7 +206,7 @@
                                     <Button
                                         AutomationProperties.Name="New category"
                                         Click="OnAddCategoryChip"
-                                        Content="&#xE710;"
+                                        Content="&#x10017C;"
                                         Style="{StaticResource AddChipButton}"
                                         ToolTipService.ToolTip="New category"
                                         Visibility="{x:Bind AddVisibility}" />
@@ -220,9 +224,10 @@
                         Style="{StaticResource DateFieldButton}">
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
                             <FontIcon
-                                FontSize="13"
+                                FontFamily="{StaticResource AppIconFont}"
+                                FontSize="14"
                                 Foreground="{ThemeResource TextSecondary}"
-                                Glyph="&#xE787;" />
+                                Glyph="&#x100249;" />
                             <TextBlock
                                 x:Name="DateText"
                                 Grid.Column="1"
@@ -233,9 +238,10 @@
                                 Text="Oct 26, 2026" />
                             <FontIcon
                                 Grid.Column="2"
-                                FontSize="9"
+                                FontFamily="{StaticResource AppIconFont}"
+                                FontSize="10"
                                 Foreground="{ThemeResource TextTertiary}"
-                                Glyph="&#xE70D;" />
+                                Glyph="&#x100188;" />
                         </Grid>
                         <Button.Flyout>
                             <Flyout
@@ -265,25 +271,23 @@
                         <StackPanel Orientation="Horizontal">
                             <RadioButton
                                 x:Name="MarkOk"
-                                Content="&#xE73E;"
+                                Content="&#x100185;"
                                 FontFamily="{StaticResource AppIconFont}"
-                                FontSize="13"
+                                FontSize="14"
                                 GroupName="Mark"
                                 Style="{StaticResource SegmentItem}" />
                             <RadioButton
                                 x:Name="MarkUnknown"
-                                Content="?"
-                                FontFamily="{StaticResource AppDisplayFont}"
+                                Content="&#x10014D;"
+                                FontFamily="{StaticResource AppIconFont}"
                                 FontSize="14"
-                                FontWeight="Semibold"
                                 GroupName="Mark"
                                 Style="{StaticResource SegmentItem}" />
                             <RadioButton
                                 x:Name="MarkWarn"
-                                Content="!"
-                                FontFamily="{StaticResource AppDisplayFont}"
+                                Content="&#x10014E;"
+                                FontFamily="{StaticResource AppIconFont}"
                                 FontSize="14"
-                                FontWeight="Semibold"
                                 GroupName="Mark"
                                 Style="{StaticResource SegmentItem}" />
                         </StackPanel>
@@ -300,9 +304,9 @@
                     Background="#34C759"
                     BorderThickness="0"
                     Click="OnConfirm"
-                    Content="&#xE73E;"
+                    Content="&#x100185;"
                     FontFamily="{StaticResource AppIconFont}"
-                    FontSize="12"
+                    FontSize="13"
                     Foreground="White">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">

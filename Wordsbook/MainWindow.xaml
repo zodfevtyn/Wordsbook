@@ -7,6 +7,9 @@
     xmlns:models="using:Wordsbook.Models"
     xmlns:vm="using:Wordsbook.ViewModels">
 
+    <!-- Mica 只是给半透明遮罩（EditorScrim / SettingsScrim）当底：没有 SystemBackdrop
+         时它们透过去看到的是黑底而不是桌面。四角和它无关，那是 ApplyCornerRegion
+         用 SetWindowRgn 把窗口区域本身切掉的。 -->
     <Window.SystemBackdrop>
         <MicaBackdrop Kind="Base" />
     </Window.SystemBackdrop>
@@ -161,7 +164,7 @@
                             </ToggleButton>
                             <Button
                                 Width="18"
-                                Margin="0,0,3,0"
+                                Margin="0,0,9,0"
                                 HorizontalAlignment="Right"
                                 Click="OnMonthChevron"
                                 Content="{x:Bind Chevron, Mode=OneWay}"
@@ -219,7 +222,7 @@
                             <!-- 叠在整行之上而不是塞进 ToggleButton：嵌进去的按钮拿不到点击 -->
                             <Button
                                 Width="18"
-                                Margin="0,0,3,0"
+                                Margin="0,0,9,0"
                                 HorizontalAlignment="Right"
                                 Click="OnLanguageChevron"
                                 Content="{x:Bind Chevron, Mode=OneWay}"
@@ -247,11 +250,20 @@
                         Style="{StaticResource SidebarRow}"
                         Tag="{x:Bind Id}">
                         <Grid ColumnDefinitions="20,*,Auto">
+                            <!-- 选中行换实心标签 + 主题色。两层叠在一起只切可见性，颜色才能继续吃 ThemeResource。 -->
                             <TextBlock
                                 FontFamily="{StaticResource AppIconFont}"
-                                FontSize="12"
+                                FontSize="13"
                                 Foreground="{ThemeResource TextTertiary}"
-                                Text="&#xE8EC;"
+                                Text="&#x1002E1;"
+                                Visibility="{x:Bind TagOutlineVisibility, Mode=OneWay}"
+                                VerticalAlignment="Center" />
+                            <TextBlock
+                                FontFamily="{StaticResource AppIconFont}"
+                                FontSize="13"
+                                Foreground="{ThemeResource Accent}"
+                                Text="&#x1002E2;"
+                                Visibility="{x:Bind TagFillVisibility, Mode=OneWay}"
                                 VerticalAlignment="Center" />
                             <TextBlock
                                 Grid.Column="1"
@@ -344,24 +356,24 @@
                                                 FontSize="12"
                                                 Foreground="{ThemeResource TextSecondary}"
                                                 Text="{x:Bind Pos}"
-                                                Visibility="{x:Bind Extras}" />
+                                                Visibility="{x:Bind PosVisibility}" />
                                         </StackPanel>
                                     </Grid>
                                     <TextBlock
                                         Margin="0,2,0,0"
                                         Style="{StaticResource CardMeaning}"
                                         Text="{x:Bind Meaning}"
-                                        Visibility="{x:Bind Extras}" />
+                                        Visibility="{x:Bind MeaningVisibility}" />
                                     <TextBlock
                                         Margin="0,3,0,0"
                                         Style="{StaticResource CardMuted}"
                                         Text="{x:Bind Pronunciation}"
-                                        Visibility="{x:Bind Extras}" />
+                                        Visibility="{x:Bind PronunciationVisibility}" />
                                     <Grid
                                         Margin="0,2,24,0"
                                         ColumnDefinitions="*,Auto"
                                         ColumnSpacing="8"
-                                        Visibility="{x:Bind Extras}">
+                                        Visibility="{x:Bind RelatedVisibility}">
                                         <TextBlock
                                             Style="{StaticResource CardRelated}"
                                             Text="{x:Bind Related}"
@@ -379,11 +391,10 @@
                                 <Border
                                     Background="{x:Bind MarkFill}"
                                     Style="{StaticResource BadgeCircle}"
-                                    Visibility="{x:Bind Extras}">
+                                    Visibility="{x:Bind MarkVisibility}">
                                     <TextBlock
-                                        FontFamily="{x:Bind MarkFont}"
-                                        FontSize="12"
-                                        FontWeight="Bold"
+                                        FontFamily="{StaticResource AppIconFont}"
+                                        FontSize="13"
                                         Foreground="White"
                                         HorizontalAlignment="Center"
                                         Text="{x:Bind MarkGlyph}"
@@ -404,7 +415,7 @@
                                 FontSize="22"
                                 Foreground="{ThemeResource Accent}"
                                 HorizontalAlignment="Center"
-                                Text="&#xE710;"
+                                Text="&#x10017C;"
                                 VerticalAlignment="Center" />
                         </Border>
                     </Grid>
@@ -419,59 +430,117 @@
                             Padding="16,9,16,9"
                             Style="{StaticResource WordCard}"
                             Visibility="{x:Bind CardVisibility}">
-                            <Grid ColumnDefinitions="230,Auto,*,190,Auto" ColumnSpacing="14">
+                            <!-- 词头和状态点各钉一列，中间所有元素装进一条可横向拖动的带子。
+                                 眼睛菜单关掉某段时它整段收起，不再留下固定列宽的空档；
+                                 带子的自然宽度超过可视宽度时就能左右拖着看全。 -->
+                            <Grid ColumnDefinitions="230,*,Auto" ColumnSpacing="14">
                                 <TextBlock
                                     Style="{StaticResource CardWord}"
                                     Text="{x:Bind Word}"
-                                    TextTrimming="CharacterEllipsis" />
-                                <StackPanel
+                                    VerticalAlignment="Center" />
+                                <ScrollViewer
                                     Grid.Column="1"
-                                    Orientation="Horizontal"
-                                    Spacing="6"
+                                    Padding="0"
                                     VerticalAlignment="Center"
-                                    Visibility="{x:Bind Extras}">
-                                    <TextBlock
-                                        FontFamily="{StaticResource AppTextFont}"
-                                        FontSize="11"
-                                        Foreground="{ThemeResource TextTertiary}"
-                                        Text="{x:Bind Nature}"
-                                        VerticalAlignment="Center"
-                                        Visibility="{x:Bind NatureVisibility}" />
-                                    <TextBlock
-                                        FontFamily="{StaticResource AppTextFont}"
-                                        FontSize="12"
-                                        Foreground="{ThemeResource TextSecondary}"
-                                        Text="{x:Bind Pos}"
-                                        VerticalAlignment="Center" />
-                                </StackPanel>
-                                <TextBlock
-                                    Grid.Column="2"
-                                    FontFamily="{StaticResource AppTextFont}"
-                                    FontSize="13"
-                                    Foreground="{ThemeResource TextPrimary}"
-                                    Text="{x:Bind Meaning}"
-                                    TextTrimming="CharacterEllipsis"
-                                    VerticalAlignment="Center"
-                                    Visibility="{x:Bind Extras}" />
-                                <TextBlock
-                                    Grid.Column="3"
-                                    FontFamily="{StaticResource AppTextFont}"
-                                    FontSize="13"
-                                    Foreground="{ThemeResource TextSecondary}"
-                                    Text="{x:Bind Pronunciation}"
-                                    TextTrimming="CharacterEllipsis"
-                                    VerticalAlignment="Center"
-                                    Visibility="{x:Bind Extras}" />
+                                    HorizontalScrollBarVisibility="Hidden"
+                                    HorizontalScrollMode="Enabled"
+                                    IsTabStop="False"
+                                    SizeChanged="OnRowStripSizeChanged"
+                                    VerticalScrollBarVisibility="Disabled"
+                                    VerticalScrollMode="Disabled">
+                                    <!-- 指针事件挂在带子的内容上而不是 ScrollViewer 上：
+                                         ScrollViewer 的类处理会在实例处理器之前把 PointerPressed
+                                         标成已处理（实测挂在它身上一次都不回调），而事件从内容
+                                         往上冒，先经过这里。Background 要有，否则空白处不命中。 -->
+                                    <Grid
+                                        Background="Transparent"
+                                        ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto"
+                                        ColumnSpacing="14"
+                                        PointerPressed="OnRowStripPanPressed"
+                                        Tapped="OnRowStripTapped">
+                                        <StackPanel
+                                            Orientation="Horizontal"
+                                            Spacing="6"
+                                            VerticalAlignment="Center"
+                                            Visibility="{x:Bind MetaVisibility}">
+                                            <TextBlock
+                                                FontFamily="{StaticResource AppTextFont}"
+                                                FontSize="11"
+                                                Foreground="{ThemeResource TextTertiary}"
+                                                Text="{x:Bind Nature}"
+                                                VerticalAlignment="Center"
+                                                Visibility="{x:Bind NatureVisibility}" />
+                                            <TextBlock
+                                                FontFamily="{StaticResource AppTextFont}"
+                                                FontSize="12"
+                                                Foreground="{ThemeResource TextSecondary}"
+                                                Text="{x:Bind Pos}"
+                                                VerticalAlignment="Center"
+                                                Visibility="{x:Bind PosVisibility}" />
+                                        </StackPanel>
+                                        <TextBlock
+                                            Grid.Column="1"
+                                            FontFamily="{StaticResource AppTextFont}"
+                                            FontSize="13"
+                                            Foreground="{ThemeResource TextPrimary}"
+                                            Text="{x:Bind Meaning}"
+                                            VerticalAlignment="Center"
+                                            Visibility="{x:Bind MeaningVisibility}" />
+                                        <TextBlock
+                                            Grid.Column="3"
+                                            FontFamily="{StaticResource AppTextFont}"
+                                            FontSize="13"
+                                            Foreground="{ThemeResource TextSecondary}"
+                                            Text="{x:Bind Pronunciation}"
+                                            VerticalAlignment="Center"
+                                            Visibility="{x:Bind PronunciationVisibility}" />
+                                        <StackPanel
+                                            Grid.Column="4"
+                                            Orientation="Horizontal"
+                                            Spacing="6"
+                                            VerticalAlignment="Center"
+                                            Visibility="{x:Bind RelatedVisibility}">
+                                            <TextBlock
+                                                FontFamily="{StaticResource AppTextFont}"
+                                                FontSize="13"
+                                                Foreground="{ThemeResource Accent}"
+                                                MaxWidth="320"
+                                                Text="{x:Bind Related}"
+                                                TextTrimming="CharacterEllipsis"
+                                                VerticalAlignment="Center" />
+                                            <TextBlock
+                                                FontFamily="{StaticResource AppTextFont}"
+                                                FontSize="11"
+                                                Foreground="{ThemeResource TextTertiary}"
+                                                Text="{x:Bind RelatedUsage}"
+                                                VerticalAlignment="Center"
+                                                Visibility="{x:Bind RelatedUsageVisibility}" />
+                                        </StackPanel>
+                                        <TextBlock
+                                            Grid.Column="5"
+                                            FontFamily="{StaticResource AppTextFont}"
+                                            FontSize="12"
+                                            Foreground="{ThemeResource TextTertiary}"
+                                            LineHeight="16"
+                                            MaxHeight="32"
+                                            MaxLines="2"
+                                            MaxWidth="420"
+                                            Text="{x:Bind Description}"
+                                            TextTrimming="CharacterEllipsis"
+                                            TextWrapping="Wrap"
+                                            VerticalAlignment="Center"
+                                            Visibility="{x:Bind DescriptionVisibility}" />
+                                    </Grid>
+                                </ScrollViewer>
                                 <Border
-                                    Grid.Column="4"
+                                    Grid.Column="2"
                                     Background="{x:Bind MarkFill}"
                                     Style="{StaticResource BadgeCircle}"
                                     VerticalAlignment="Center"
-                                    Visibility="{x:Bind Extras}">
+                                    Visibility="{x:Bind RowMarkVisibility}">
                                     <TextBlock
-                                        FontFamily="{x:Bind MarkFont}"
-                                        FontSize="12"
-                                        FontWeight="Bold"
+                                        FontFamily="{StaticResource AppIconFont}"
+                                        FontSize="13"
                                         Foreground="White"
                                         HorizontalAlignment="Center"
                                         Text="{x:Bind MarkGlyph}"
@@ -492,7 +561,7 @@
                                 FontSize="16"
                                 Foreground="{ThemeResource Accent}"
                                 HorizontalAlignment="Left"
-                                Text="&#xE710;"
+                                Text="&#x10017C;"
                                 VerticalAlignment="Center" />
                         </Border>
                     </Grid>
@@ -521,7 +590,7 @@
                                         Orientation="Horizontal"
                                         Spacing="6"
                                         VerticalAlignment="Bottom"
-                                        Visibility="{x:Bind Extras}">
+                                        Visibility="{x:Bind MetaVisibility}">
                                         <TextBlock
                                             FontFamily="{StaticResource AppTextFont}"
                                             FontSize="11"
@@ -532,11 +601,12 @@
                                             FontFamily="{StaticResource AppTextFont}"
                                             FontSize="12"
                                             Foreground="{ThemeResource TextSecondary}"
-                                            Text="{x:Bind Pos}" />
+                                            Text="{x:Bind Pos}"
+                                            Visibility="{x:Bind PosVisibility}" />
                                     </StackPanel>
                                 </Grid>
 
-                                <StackPanel Visibility="{x:Bind Extras}">
+                                <StackPanel Visibility="{x:Bind DetailVisibility}">
                                     <TextBlock
                                         Margin="0,4,0,0"
                                         FontFamily="{StaticResource AppTextFont}"
@@ -544,7 +614,8 @@
                                         FontWeight="Medium"
                                         Foreground="{ThemeResource TextPrimary}"
                                         Text="{x:Bind Meaning}"
-                                        TextWrapping="Wrap" />
+                                        TextWrapping="Wrap"
+                                        Visibility="{x:Bind MeaningVisibility}" />
                                     <TextBlock
                                         Margin="0,3,0,0"
                                         FontFamily="{StaticResource AppTextFont}"
@@ -610,7 +681,7 @@
                                             TextWrapping="Wrap" />
                                     </StackPanel>
 
-                                    <Grid Margin="0,14,0,0">
+                                    <Grid Margin="0,14,0,0" Visibility="{x:Bind MarkVisibility}">
                                         <Border
                                             Background="{x:Bind MarkFill}"
                                             HorizontalAlignment="Right"
@@ -618,9 +689,8 @@
                                             ToolTipService.ToolTip="Memory status"
                                             VerticalAlignment="Center">
                                             <TextBlock
-                                                FontFamily="{x:Bind MarkFont}"
-                                                FontSize="12"
-                                                FontWeight="Bold"
+                                                FontFamily="{StaticResource AppIconFont}"
+                                                FontSize="13"
                                                 Foreground="White"
                                                 HorizontalAlignment="Center"
                                                 Text="{x:Bind MarkGlyph}"
@@ -643,7 +713,7 @@
                                 FontSize="22"
                                 Foreground="{ThemeResource Accent}"
                                 HorizontalAlignment="Center"
-                                Text="&#xE710;"
+                                Text="&#x10017C;"
                                 VerticalAlignment="Center" />
                         </Border>
                     </Grid>
@@ -678,28 +748,32 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <!-- 侧栏底色一直顶到窗口上沿，红绿灯浮在它上面 -->
+            <!-- 侧栏底色一直顶到窗口上沿，红绿灯浮在它上面：桌面 acrylic 毛玻璃 + 主题色调层 -->
             <Border
                 x:Name="SidebarSurface"
                 Grid.Row="0"
                 Grid.RowSpan="2"
                 Grid.Column="0"
                 Width="{x:Bind Vm.SidebarWidth, Mode=OneWay}"
-                Background="{ThemeResource SidebarBg}"
-                Canvas.ZIndex="1" />
+                Canvas.ZIndex="1"
+                CornerRadius="{StaticResource RWinLeft}">
+                <Grid>
+                    <SystemBackdropElement x:Name="SidebarGlass" CornerRadius="18,0,0,18">
+                        <SystemBackdropElement.SystemBackdrop>
+                            <DesktopAcrylicBackdrop />
+                        </SystemBackdropElement.SystemBackdrop>
+                    </SystemBackdropElement>
+                    <Border x:Name="SidebarVeil" Background="{ThemeResource SidebarTint}" CornerRadius="{StaticResource RWinLeft}" />
+                </Grid>
+            </Border>
 
             <Border
+                x:Name="ContentSurface"
                 Grid.Row="0"
                 Grid.RowSpan="2"
                 Grid.Column="1"
-                Background="{ThemeResource ContentBg}" />
-            <Border
-                Grid.Row="1"
-                Grid.Column="1"
-                Width="1"
-                HorizontalAlignment="Left"
-                Background="{ThemeResource Divider}" />
-
+                Background="{ThemeResource ContentBg}"
+                CornerRadius="{StaticResource RWinRight}" />
             <!-- ==================== 侧栏 ==================== -->
             <Grid
                 x:Name="SidebarContent"
@@ -739,7 +813,7 @@
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Center"
                                 Click="OnEditLanguages"
-                                Content="&#xE70F;"
+                                Content="&#x10020E;"
                                 FontFamily="{StaticResource AppIconFont}"
                                 FontSize="11"
                                 Style="{StaticResource TinyIconButton}"
@@ -761,7 +835,7 @@
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Center"
                                 Click="OnAddCategory"
-                                Content="&#xE710;"
+                                Content="&#x10017C;"
                                 FontFamily="{StaticResource AppIconFont}"
                                 FontSize="11"
                                 Style="{StaticResource TinyIconButton}" />
@@ -784,7 +858,7 @@
                         Height="30"
                         HorizontalAlignment="Left"
                         Click="OnOpenSettings"
-                        Content="&#xE713;"
+                        Content="&#x1008CB;"
                         FontFamily="{StaticResource AppIconFont}"
                         FontSize="14"
                         Style="{StaticResource TinyIconButton}"
@@ -801,7 +875,9 @@
             </Grid>
 
             <!-- ==================== 单词区 ==================== -->
-            <Grid x:Name="WordsHost" Grid.Row="1" Grid.Column="1" Margin="26,4,22,14">
+            <!-- 顶到窗口上沿，卡片滚动时从标题条的毛玻璃下面穿过去；右边留到 0，
+                 让滚动条贴着窗口右沿，卡片的内缩改由 ListView 的 Padding 负责。 -->
+            <Grid x:Name="WordsHost" Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Margin="26,0,0,0">
                 <!-- 分组 ListView 在运行时换 ItemsPanel 会让 WinUI 原生崩溃，
                      所以网格/列表各用一个 ListView，只切可见性。 -->
                 <ListView
@@ -811,6 +887,9 @@
                     IsItemClickEnabled="True"
                     ItemClick="OnWordItemClick"
                     Style="{StaticResource WordListBase}">
+                    <ListView.Header>
+                        <Border Height="52" />
+                    </ListView.Header>
                     <ListView.GroupStyle>
                         <GroupStyle
                             HeaderContainerStyle="{StaticResource WordGroupHeaderContainer}"
@@ -824,8 +903,14 @@
                     ItemsPanel="{StaticResource StackPanelTemplate}"
                     IsItemClickEnabled="True"
                     ItemClick="OnWordItemClick"
+                    PointerCanceled="OnRowStripPanEnded"
+                    PointerMoved="OnRowStripPanMoved"
+                    PointerReleased="OnRowStripPanEnded"
                     Style="{StaticResource WordListBase}"
                     Visibility="Collapsed">
+                    <ListView.Header>
+                        <Border Height="52" />
+                    </ListView.Header>
                     <ListView.GroupStyle>
                         <GroupStyle
                             HeaderContainerStyle="{StaticResource WordGroupHeaderContainer}"
@@ -842,7 +927,7 @@
                     Visibility="Collapsed">
                     <ItemsControl
                         x:Name="AdaptiveGroups"
-                        Margin="0,0,14,0"
+                        Margin="0,52,14,20"
                         HorizontalAlignment="Stretch"
                         HorizontalContentAlignment="Stretch"
                         ItemTemplate="{StaticResource AdaptiveGroupTemplate}" />
@@ -850,6 +935,7 @@
 
                 <TextBlock
                     x:Name="EmptyHint"
+                    Margin="0,48,22,0"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
                     FontFamily="{StaticResource AppTextFont}"
@@ -864,7 +950,18 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
+
+                <!-- 标题条毛玻璃：模糊的是底下这片单词表，不是桌面；侧栏那一格留给桌面 acrylic -->
+                <Border
+                    x:Name="HeaderGlass"
+                    Grid.Column="1"
+                    Grid.ColumnSpan="2"
+                    Background="{ThemeResource HeaderAcrylic}"
+                    CornerRadius="{StaticResource RWinTopRight}">
+                    <Border x:Name="HeaderVeilBorder" Background="{ThemeResource HeaderVeil}" CornerRadius="{StaticResource RWinTopRight}" />
+                </Border>
 
                 <Grid
                     Width="{x:Bind Vm.SidebarWidth, Mode=OneWay}"
@@ -883,21 +980,21 @@
                             Background="#FF5F57"
                             BorderBrush="#26000000"
                             Click="OnTrafficClose"
-                            Content="&#xE8BB;"
+                            Content="&#x100184;"
                             Style="{StaticResource TrafficButton}" />
                         <Button
                             x:Name="TrafficMin"
                             Background="#FEBC2E"
                             BorderBrush="#26000000"
                             Click="OnTrafficMinimize"
-                            Content="&#xE921;"
+                            Content="&#x10017D;"
                             Style="{StaticResource TrafficButton}" />
                         <Button
                             x:Name="TrafficMax"
                             Background="#28C840"
                             BorderBrush="#26000000"
                             Click="OnTrafficMaximize"
-                            Content="&#xE922;"
+                            Content="&#x100C76;"
                             Style="{StaticResource TrafficButton}" />
                     </StackPanel>
                 </Grid>
@@ -911,17 +1008,22 @@
                     <Button
                         x:Name="SidebarToggleButton"
                         Click="OnToggleSidebar"
-                        Content="&#xF58C;"
+                        Content="&#x100C31;"
+                        FontFamily="{StaticResource AppIconFont}"
+                        FontSize="19"
                         Style="{StaticResource ToolButton}"
                         ToolTipService.ToolTip="Show / hide sidebar" />
                     <TextBlock
                         VerticalAlignment="Center"
+                        MinWidth="0"
                         Style="{StaticResource PageTitle}"
-                        Text="{x:Bind Vm.HeaderTitle, Mode=OneWay}" />
+                        Text="{x:Bind Vm.HeaderTitle, Mode=OneWay}"
+                        TextTrimming="CharacterEllipsis" />
                 </StackPanel>
 
                 <StackPanel
-                    Grid.Column="1"
+                    x:Name="ToolButtons"
+                    Grid.Column="2"
                     Margin="0,0,16,0"
                     HorizontalAlignment="Right"
                     Orientation="Horizontal"
@@ -946,33 +1048,29 @@
                     <Button
                         x:Name="LayoutButton"
                         Click="OnToggleLayout"
-                        Content="&#xE8FD;"
+                        Content="&#x1002F2;"
                         Style="{StaticResource ToolButton}"
                         ToolTipService.ToolTip="List / grid view" />
                     <Button
                         x:Name="AdaptiveButton"
                         AutomationProperties.Name="Adaptive cards"
                         Click="OnToggleAdaptive"
+                        Content="&#x1001F4;"
                         Style="{StaticResource ToolButton}"
-                        ToolTipService.ToolTip="Adaptive cards (auto height)">
-                        <PathIcon
-                            Width="16"
-                            Height="16"
-                            Data="M0,0 H7 V6 H0 Z M9,0 H16 V10 H9 Z M0,8 H7 V16 H0 Z M9,12 H16 V16 H9 Z"
-                            Foreground="{ThemeResource TextPrimary}" />
-                    </Button>
+                        ToolTipService.ToolTip="Adaptive cards (auto height)" />
                     <Button
                         x:Name="SearchButton"
                         Click="OnToggleSearch"
-                        Content="&#xE721;"
+                        Content="&#x1002AB;"
                         Style="{StaticResource ToolButton}"
                         ToolTipService.ToolTip="Search" />
                     <Button
                         x:Name="FocusButton"
                         Click="OnToggleFocus"
-                        Content="&#xE7B3;"
+                        Content="&#x1002EE;"
+                        RightTapped="OnFocusRightTapped"
                         Style="{StaticResource ToolButton}"
-                        ToolTipService.ToolTip="Words only" />
+                        ToolTipService.ToolTip="Words only — right click to pick card fields" />
                 </StackPanel>
             </Grid>
 
@@ -992,7 +1090,7 @@
                 Visibility="{x:Bind Vm.SidebarVisibility, Mode=OneWay}" />
 
             <!-- ==================== 编辑弹窗 ==================== -->
-            <Grid
+            <Border
                 x:Name="EditorScrim"
                 Grid.Row="0"
                 Grid.RowSpan="2"
@@ -1000,17 +1098,22 @@
                 Grid.ColumnSpan="2"
                 Background="{ThemeResource ScrimBg}"
                 Canvas.ZIndex="3"
+                CornerRadius="18"
                 Tapped="OnScrimTapped"
                 Visibility="Collapsed">
-                <controls:WordEditor
-                    x:Name="Editor"
-                    Width="440"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center" />
-            </Grid>
+                <Grid Margin="24,0,24,0">
+                    <!-- MaxWidth 而不是 Width：窗口比弹窗还窄时（缩放 1.25 下弹窗就有 687 物理像素宽），
+                         定宽会被窗口右沿直接切掉，右边的 + 按钮连点都点不到。 -->
+                    <controls:WordEditor
+                        x:Name="Editor"
+                        MaxWidth="440"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center" />
+                </Grid>
+            </Border>
 
             <!-- ==================== 设置弹窗 ==================== -->
-            <Grid
+            <Border
                 x:Name="SettingsScrim"
                 Grid.Row="0"
                 Grid.RowSpan="2"
@@ -1018,13 +1121,16 @@
                 Grid.ColumnSpan="2"
                 Background="{ThemeResource ScrimBg}"
                 Canvas.ZIndex="3"
+                CornerRadius="18"
                 Tapped="OnSettingsScrimTapped"
                 Visibility="Collapsed">
-                <controls:SettingsPanel
-                    x:Name="Settings"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center" />
-            </Grid>
+                <Grid>
+                    <controls:SettingsPanel
+                        x:Name="Settings"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center" />
+                </Grid>
+            </Border>
         </Grid>
     </Grid>
 </Window>

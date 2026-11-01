@@ -14,10 +14,11 @@ public static class WindowChrome
     const long WS_THICKFRAME = 0x0004_0000;
     const long WS_SYSMENU = 0x0008_0000;
 
-    const uint SWP_NOSIZE = 0x0001, SWP_NOMOVE = 0x0002, SWP_NOZORDER = 0x0004, SWP_FRAMECHANGED = 0x0020;
+    const uint SWP_NOSIZE = 0x0001, SWP_NOMOVE = 0x0002, SWP_NOZORDER = 0x0004, SWP_NOACTIVATE = 0x0010, SWP_FRAMECHANGED = 0x0020;
 
     const int WM_NCCALCSIZE = 0x0083;
     const int WM_GETMINMAXINFO = 0x0024;
+    const int WM_SIZE = 0x0005;
     const int SM_CXSIZEFRAME = 32, SM_CXPADDEDBORDER = 92;
 
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] static extern IntPtr GetLong(IntPtr hWnd, int index);
@@ -34,6 +35,9 @@ public static class WindowChrome
     [DllImport("user32.dll")] static extern IntPtr MonitorFromWindow(IntPtr hWnd, uint flags);
     [DllImport("user32.dll")] static extern bool GetMonitorInfo(IntPtr monitor, ref MONITORINFO info);
     [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr hWnd, int attr, out RECT rect, int size);
+    [DllImport("gdi32.dll")] static extern IntPtr CreateRoundRectRgn(int x1, int y1, int x2, int y2, int w, int h);
+    [DllImport("user32.dll")] static extern int SetWindowRgn(IntPtr hWnd, IntPtr hRgn, bool bRedraw);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string? cls, string? window);
 
     [StructLayout(LayoutKind.Sequential)] public struct RECT
     { public int Left, Top, Right, Bottom; }
@@ -65,10 +69,25 @@ public static class WindowChrome
     static WndProc? _proc; // 委托必须被静态字段持有，否则 GC 之后回调指针就是野的
 
     /// <summary>
-    /// 窗口圆角：实测这台 Win11 只认 1=直角、2=8dp 圆角、3=4dp 小圆角，
-    /// 传 4 以上要么按 2 处理要么直接变直角，所以 2 已经是系统给的上限。
+    /// XAML 岛（DesktopChildSiteBridge）默认比客户区顶边低 1px，那一行于是永远没人画：
+    /// 不开 DWM 圆角时它就是一整行纯黑（实测停在 (0,1) 时顶行 (0,0,0) 占满 179/179 采样点），
+    /// 开着则被 DWM 的边框线盖掉——所以之前那条边界线其实是拿来遮这个洞的。
+    /// 抬回 (0,0) 铺满客户区，两个问题一起没。
+    /// 只能在 WinUI 处理完尺寸/DPI 变更之后再调，见 MainWindow.RequestIslandAlign。
     /// </summary>
-    const int CornerRound = 2;
+    public static void AlignIsland(IntPtr hWnd)
+    {
+        var bridge = FindWindowEx(hWnd, IntPtr.Zero, "Microsoft.UI.Content.DesktopChildSiteBridge", null);
+        if (bridge == IntPtr.Zero || !GetClientRect(hWnd, out var rc) || rc.Right < 2 || rc.Bottom < 2) return;
+
+        var origin = new POINT();
+        if (ClientToScreen(hWnd, ref origin)
+            && GetWindowRect(bridge, out var br)
+            && br.Left == origin.X && br.Top == origin.Y
+            && br.Right - br.Left == rc.Right && br.Bottom - br.Top == rc.Bottom) return;
+
+        SetWindowPos(bridge, IntPtr.Zero, 0, 0, rc.Right, rc.Bottom, SWP_NOZORDER | SWP_NOACTIVATE);
+    }
 
     /// <summary>
     /// 去掉系统标题栏。清掉 WS_CAPTION 后 DWM 会在客户区上方留一条约 8px 的边框带，
@@ -84,8 +103,16 @@ public static class WindowChrome
         _proc = Hook;
         _prevWndProc = SetLong(hwnd, -4, Marshal.GetFunctionPointerForDelegate(_proc));
 
-        var corner = CornerRound;
+        // 18 圆角由 SetWindowRgn 负责，比 DWM 的 8dp 上限（实测 1=直角、2=8dp、3=4dp）
+        // 更靠内，DWM 那份圆角轮不到它管，所以直接要直角。
+        var corner = 1;
         DwmSetWindowAttribute(hwnd, 33, ref corner, 4);
+
+        // 光要直角还不够：DWM 照旧在窗口顶边画一条 1px 边框线（活动窗口染强调色，
+        // 实测 (47,114,170)，非活动是浅灰），而且它画在客户区外面一格，被窗口区域
+        // 切成圆角后正好贴在左上角曲线尽头。只有显式要 COLOR_NONE 才拿掉。
+        var border = unchecked((int)0xFFFFFFFE);
+        DwmSetWindowAttribute(hwnd, 34, ref border, 4);
 
         SetWindowPos(hwnd, IntPtr.Zero, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
     }
@@ -127,6 +154,15 @@ public static class WindowChrome
             return IntPtr.Zero;
         }
 
+        if (msg == WM_SIZE)
+        {
+            var result = CallWindowProc(_prevWndProc, hWnd, msg, wParam, lParam);
+            // 这里不能抬岛：WM_SIZE 里 WinUI 还在重建岛自己的合成目标，
+            // 当场 SetWindowPos 把岛挪走会让整页字形被撕成半截（实测跨 DPI 搬屏必现）。
+            ApplyCornerRegion(hWnd);
+            return result;
+        }
+
         return CallWindowProc(_prevWndProc, hWnd, msg, wParam, lParam);
     }
 
@@ -138,6 +174,46 @@ public static class WindowChrome
 
     /// <summary>AppWindow.Resize 收的是物理像素，先按窗口 DPI 换算再乘。</summary>
     public static double DpiScale(IntPtr hWnd) => GetDpiForWindow(hWnd) / 96.0;
+
+    /// <summary>
+    /// 窗口四角的真实裁剪半径（物理像素）。WinUI 3 的窗口是不透明的，元素圆角只能让
+    /// 贴边面板自己缩进去，被让出来的那块角不会透出桌面，只会露出黑底，所以必须用
+    /// SetWindowRgn 把窗口区域本身切成圆角。半径由 MainWindow 按缩放算好后写进来。
+    /// </summary>
+    public static double CornerPhysical = 22;
+
+    public static void ApplyCornerRegion(IntPtr hWnd)
+    {
+        if (GetClientRect(hWnd, out var rc))
+        {
+            var w = rc.Right - rc.Left;
+            var h = rc.Bottom - rc.Top;
+            if (w < 8 || h < 8) return;
+
+            // 铺满工作区（点绿灯最大化走的是 AppWindow.MoveAndResize，IsZoomed 不会变真）
+            // 时四角就是屏幕角，不该再切，否则屏幕角上会露出壁纸。
+            if (CoversWorkArea(hWnd))
+            {
+                SetWindowRgn(hWnd, IntPtr.Zero, true);
+                return;
+            }
+
+            var d = (int)Math.Round(CornerPhysical) * 2;
+            // SetWindowRgn 成功后区域句柄归窗口所有，不能自己 DeleteObject。
+            SetWindowRgn(hWnd, CreateRoundRectRgn(0, 0, w + 1, h + 1, d, d), true);
+        }
+    }
+
+    /// <summary>窗口是否正好铺满所在显示器的工作区，即“最大化”状态。</summary>
+    public static bool CoversWorkArea(IntPtr hWnd)
+    {
+        var info = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
+        if (!GetMonitorInfo(MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST), ref info)
+            || !GetWindowRect(hWnd, out var wr)) return false;
+
+        var wa = info.rcWork;
+        return wr.Left <= wa.Left && wr.Top <= wa.Top && wr.Right >= wa.Right && wr.Bottom >= wa.Bottom;
+    }
 
     /// <summary>
     /// 客户区铺满整个窗口后 DWM 不再给边缘留缩放热区，得自己按这个宽度告诉 WinUI。

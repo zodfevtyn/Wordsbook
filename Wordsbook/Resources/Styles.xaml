@@ -15,11 +15,19 @@
     <CornerRadius x:Key="RDialog">26</CornerRadius>
     <CornerRadius x:Key="RPillTall">18</CornerRadius>
     <CornerRadius x:Key="RPill">17</CornerRadius>
+    <!-- 侧栏行高 30，半径取一半正好是两头半圆的胶囊 -->
+    <CornerRadius x:Key="RPillRow">15</CornerRadius>
+    <!-- DWM 最多只给 8dp 的窗口圆角（WindowChrome.CornerRound），想要更大只能让贴边的
+         几个面各自带圆角，被让出来的角透出桌面。 -->
+    <CornerRadius x:Key="RWinLeft">18,0,0,18</CornerRadius>
+    <CornerRadius x:Key="RWinRight">0,18,18,0</CornerRadius>
+    <CornerRadius x:Key="RWinTopRight">0,18,0,0</CornerRadius>
 
     <FontFamily x:Key="AppTextFont">SF Pro Text</FontFamily>
     <FontFamily x:Key="AppDisplayFont">SF Pro Display</FontFamily>
     <FontFamily x:Key="AppRoundFont">SF Pro Rounded</FontFamily>
-    <FontFamily x:Key="AppIconFont">Segoe Fluent Icons</FontFamily>
+    <!-- 图标走 SF Pro Display 的 16 平面私用区（SF Symbols），码位表见 Icons.cs -->
+    <FontFamily x:Key="AppIconFont">SF Pro Display</FontFamily>
 
     <!-- 统一缓动：进场减速、退场加速；只配 Opacity / Transform，交给合成线程 -->
     <ExponentialEase x:Key="EaseOutExpo" Exponent="4" EasingMode="EaseOut" />
@@ -771,13 +779,13 @@
     <!-- 侧栏目录行：选中态由 IsChecked 驱动，悬停态走 VisualState，避免每行都挂触发器 -->
     <Style x:Key="SidebarRow" TargetType="ToggleButton">
         <Setter Property="Height" Value="30" />
-        <Setter Property="Padding" Value="6,0,6,0" />
+        <Setter Property="Padding" Value="8,0,12,0" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="FontFamily" Value="{StaticResource AppTextFont}" />
         <Setter Property="FontSize" Value="14" />
         <Setter Property="Foreground" Value="{ThemeResource TextPrimary}" />
-        <Setter Property="CornerRadius" Value="{StaticResource RSmall}" />
+        <Setter Property="CornerRadius" Value="{StaticResource RPillRow}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleButton">
@@ -824,6 +832,58 @@
                                 Content="{TemplateBinding Content}" />
                         </Border>
                     </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 眼睛菜单的行：整行可点，只吃悬停底色，点它不会收起弹层 -->
+    <Style x:Key="CardFieldRow" TargetType="Button">
+        <Setter Property="Padding" Value="8,6,12,6" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="7" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="FontFamily" Value="{StaticResource AppTextFont}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Foreground" Value="{ThemeResource TextPrimary}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border
+                        x:Name="Surface"
+                        Background="Transparent"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames
+                                            Storyboard.TargetName="Surface"
+                                            Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource HoverRow}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames
+                                            Storyboard.TargetName="Surface"
+                                            Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource SelectedRow}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Disabled" />
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <ContentPresenter
+                            Margin="{TemplateBinding Padding}"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Content="{TemplateBinding Content}" />
+                    </Border>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -988,7 +1048,12 @@
         <Setter Property="IsItemClickEnabled" Value="True" />
         <Setter Property="SelectionMode" Value="None" />
         <Setter Property="IsSwipeEnabled" Value="False" />
-        <Setter Property="Padding" Value="0" />
+        <!-- 底部留 20：滚到最底时最后一张卡片完整露出，不再被窗口下边缘切一半。
+             顶部不能也留白，Padding 会把视口一起缩进去，卡片就永远钻不到标题条下面，
+             所以顶部改由 ListView.Header 占位（见 MainWindow.xaml）。
+             右边同理：Padding 只缩内容不缩滚动条，所以卡片照旧内缩 22，
+             而滑块能贴到 WordsHost 的右沿（也就是窗口右沿）。 -->
+        <Setter Property="Padding" Value="0,0,22,20" />
         <Setter Property="Margin" Value="0" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />

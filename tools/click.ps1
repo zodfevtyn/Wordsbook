@@ -3,6 +3,7 @@ param(
     [Parameter(Mandatory = $true)][int]$Y,
     [string]$Type = "",
     [switch]$Right,
+    [switch]$Double,
     [switch]$Wheel,
     [string]$ProcessName = "Wordsbook"
 )
@@ -35,6 +36,10 @@ public static class Clicker {
     }
 
     public static void Click(IntPtr hwnd, int clientX, int clientY, bool right) {
+        Click(hwnd, clientX, clientY, right, false);
+    }
+
+    public static void Click(IntPtr hwnd, int clientX, int clientY, bool right, bool dbl) {
         RECT r; GetWindowRect(hwnd, out r);
         ShowWindow(hwnd, 9); SwitchToThisWindow(hwnd, true); SetForegroundWindow(hwnd);
         System.Threading.Thread.Sleep(250);
@@ -46,6 +51,11 @@ public static class Clicker {
         } else {
             mouse_event(LEFTDOWN, 0, 0, 0, IntPtr.Zero);
             mouse_event(LEFTUP, 0, 0, 0, IntPtr.Zero);
+            if (dbl) {
+                System.Threading.Thread.Sleep(70);
+                mouse_event(LEFTDOWN, 0, 0, 0, IntPtr.Zero);
+                mouse_event(LEFTUP, 0, 0, 0, IntPtr.Zero);
+            }
         }
     }
 
@@ -67,7 +77,7 @@ $proc = Get-Process -Name $ProcessName -ErrorAction SilentlyContinue | Where-Obj
 if (-not $proc) { Write-Error "no $ProcessName window"; exit 1 }
 
 if ($Wheel) { [Clicker]::Wheel($proc.MainWindowHandle, $X, $Y, 3) }
-else { [Clicker]::Click($proc.MainWindowHandle, $X, $Y, [bool]$Right) }
+else { [Clicker]::Click($proc.MainWindowHandle, $X, $Y, [bool]$Right, [bool]$Double) }
 Start-Sleep -Milliseconds 260
 
 if ($Type -ne "") {

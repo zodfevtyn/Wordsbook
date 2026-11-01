@@ -1,4 +1,4 @@
-param([string]$Version = "0.1.1")
+param([string]$Version = "0.1.2")
 $ErrorActionPreference = "Stop"
 
 # 打包 Wordsbook 桌面版（未打包 WinUI 3，非 MSIX）。

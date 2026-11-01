@@ -6,10 +6,12 @@
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
             <!--
-                底色几乎不透明，只留一点 Mica 透气。之前 ContentBg 是全透明，
+                ContentBg 几乎不透明，只留一点 Mica 透气。之前它是全透明，
                 深色壁纸会把“白天模式”整片染成灰黑，红绿灯和工具栏图标都看不清。
+                SidebarTint 压在桌面 acrylic 之上：既保住文字对比，又把系统 acrylic
+                的中性灰拉回本应用色板。
             -->
-            <SolidColorBrush x:Key="SidebarBg" Color="#F2ECECEF" />
+            <SolidColorBrush x:Key="SidebarTint" Color="#26ECECEF" />
             <SolidColorBrush x:Key="ContentBg" Color="#F7F7F7F9" />
             <SolidColorBrush x:Key="CardBg" Color="#FAFFFFFF" />
             <SolidColorBrush x:Key="CardStroke" Color="#14000000" />
@@ -17,17 +19,25 @@
             <SolidColorBrush x:Key="TextSecondary" Color="#86868B" />
             <SolidColorBrush x:Key="TextTertiary" Color="#AEAEB2" />
             <SolidColorBrush x:Key="Accent" Color="#0A7CFF" />
-            <SolidColorBrush x:Key="FieldBg" Color="#E4E4E8" />
+            <SolidColorBrush x:Key="FieldBg" Color="#1F000000" />
             <SolidColorBrush x:Key="FieldFg" Color="#1C1C1E" />
             <SolidColorBrush x:Key="FieldPlaceholder" Color="#9A9A9E" />
-            <SolidColorBrush x:Key="SelectedRow" Color="#DCDCE1" />
+            <SolidColorBrush x:Key="SelectedRow" Color="#2E000000" />
             <SolidColorBrush x:Key="HoverRow" Color="#0C000000" />
             <SolidColorBrush x:Key="ScrimBg" Color="#55000000" />
             <SolidColorBrush x:Key="DialogBg" Color="#F7FFFFFF" />
             <SolidColorBrush x:Key="DialogStroke" Color="#1A000000" />
-            <SolidColorBrush x:Key="SegmentTrack" Color="#E1E1E5" />
+            <SolidColorBrush x:Key="SegmentTrack" Color="#1F000000" />
             <SolidColorBrush x:Key="SegmentThumb" Color="#FFFFFFFF" />
             <SolidColorBrush x:Key="Divider" Color="#1A000000" />
+            <!-- 标题条：in-app acrylic，模糊的是它下面那片单词表，不是桌面 -->
+            <AcrylicBrush x:Key="HeaderAcrylic"
+                TintColor="#F7F7F9"
+                TintOpacity="0.5"
+                TintLuminosityOpacity="0.2"
+                FallbackColor="#F7F7F7F9" />
+            <!-- acrylic 的噪点层没法关，压一层薄实色在它上面把颗粒抹平 -->
+            <SolidColorBrush x:Key="HeaderVeil" Color="#59F7F7F9" />
 
             <!-- 日历默认跟随系统强调色（这台机器是橙色），统一成应用蓝 -->
             <SolidColorBrush x:Key="CalendarViewSelectedBorderBrush" Color="#0A7CFF" />
@@ -42,7 +52,7 @@
             <SolidColorBrush x:Key="CalendarViewTodayPressedBackground" Color="#0A7CFF" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
-            <SolidColorBrush x:Key="SidebarBg" Color="#F226262A" />
+            <SolidColorBrush x:Key="SidebarTint" Color="#2626262A" />
             <SolidColorBrush x:Key="ContentBg" Color="#F71B1B1F" />
             <SolidColorBrush x:Key="CardBg" Color="#FA323236" />
             <SolidColorBrush x:Key="CardStroke" Color="#1FFFFFFF" />
@@ -50,17 +60,23 @@
             <SolidColorBrush x:Key="TextSecondary" Color="#98989D" />
             <SolidColorBrush x:Key="TextTertiary" Color="#6E6E73" />
             <SolidColorBrush x:Key="Accent" Color="#0A84FF" />
-            <SolidColorBrush x:Key="FieldBg" Color="#48484A" />
+            <SolidColorBrush x:Key="FieldBg" Color="#33FFFFFF" />
             <SolidColorBrush x:Key="FieldFg" Color="#F5F5F7" />
             <SolidColorBrush x:Key="FieldPlaceholder" Color="#8E8E93" />
-            <SolidColorBrush x:Key="SelectedRow" Color="#54545A" />
+            <SolidColorBrush x:Key="SelectedRow" Color="#40FFFFFF" />
             <SolidColorBrush x:Key="HoverRow" Color="#12FFFFFF" />
             <SolidColorBrush x:Key="ScrimBg" Color="#66000000" />
             <SolidColorBrush x:Key="DialogBg" Color="#F4313133" />
             <SolidColorBrush x:Key="DialogStroke" Color="#26FFFFFF" />
-            <SolidColorBrush x:Key="SegmentTrack" Color="#48484A" />
+            <SolidColorBrush x:Key="SegmentTrack" Color="#33FFFFFF" />
             <SolidColorBrush x:Key="SegmentThumb" Color="#FF636366" />
             <SolidColorBrush x:Key="Divider" Color="#22FFFFFF" />
+            <AcrylicBrush x:Key="HeaderAcrylic"
+                TintColor="#1B1B1F"
+                TintOpacity="0.5"
+                TintLuminosityOpacity="0.15"
+                FallbackColor="#F71B1B1F" />
+            <SolidColorBrush x:Key="HeaderVeil" Color="#591B1B1F" />
 
             <SolidColorBrush x:Key="CalendarViewSelectedBorderBrush" Color="#0A84FF" />
             <SolidColorBrush x:Key="CalendarViewSelectedHoverBorderBrush" Color="#0A84FF" />

@@ -100,6 +100,7 @@ public sealed partial class MainWindow : Window
         UpdateToolStates();
         Vm.Initialize();
         Vm.SetSidebarOpen(Vm.IsSidebarOpen, animate: false);
+        RootGrid.LayoutUpdated += OnRootLayoutUpdated;
     }
 
     // ------------------------------------------------------------ 缩放 / 主题
@@ -187,6 +188,71 @@ public sealed partial class MainWindow : Window
         RootGrid.Height = h / z;
         RootScale.ScaleX = z;
         RootScale.ScaleY = z;
+
+        // 贴边面板的 18 圆角是 RootGrid 坐标系里的，换成屏幕物理像素还要再乘缩放和 DPI，
+        // 窗口区域必须切在同一个半径上，否则圆角外面会露出一圈黑底。
+        RequestIslandAlign();
+        WindowChrome.CornerPhysical = WindowCorner * z * WindowChrome.DpiScale(_hwnd);
+        WindowChrome.ApplyCornerRegion(_hwnd);
+        ApplyCornerRadii(CoversWorkArea() ? 0 : WindowCorner);
+    }
+
+    DispatcherQueueTimer? _alignTimer;
+    double _alignDpi = -1;
+
+    /// <summary>
+    /// 抬岛要推迟，而且刚换过 DPI 的那一次必须跳过。当场抬不行：WM_SIZE 里
+    /// DesktopChildSiteBridge 正被 WinUI 重建，SetWindowPos 把它挪走之后合成目标和布局
+    /// 就脱钩，整页字形被撕成半截（实测搬到另一块不同缩放的屏上必现，留着 (0,1) 不动就正常）。
+    /// 所以 DPI 一变先只记下新值、放过这一次，等同一个 DPI 下的下一次尺寸变更再补抬；
+    /// 那 150ms 也顺便让 WinUI 走完自己的重建。AlignIsland 只在真的偏了才下发，反复触发没有副作用。
+    /// </summary>
+    void RequestIslandAlign()
+    {
+        if (_alignTimer is null)
+        {
+            _alignTimer = DispatcherQueue.CreateTimer();
+            _alignTimer.Tick += (_, _) => AlignIslandNow();
+        }
+        _alignTimer.Interval = TimeSpan.FromMilliseconds(150);
+        _alignTimer.IsRepeating = false;
+        _alignTimer.Stop();
+        _alignTimer.Start();
+    }
+
+    void AlignIslandNow()
+    {
+        var dpi = WindowChrome.DpiScale(_hwnd);
+        var changed = _alignDpi >= 0 && Math.Abs(dpi - _alignDpi) > 0.001;
+        _alignDpi = dpi;
+        if (!changed) WindowChrome.AlignIsland(_hwnd);
+    }
+
+    const double WindowCorner = 18;
+    double _cornerRadii = -1;
+
+    /// <summary>点绿灯走的是 AppWindow.MoveAndResize，IsZoomed 不会变真，只能自己比工作区。</summary>
+    bool CoversWorkArea() => WindowChrome.CoversWorkArea(_hwnd);
+
+    /// <summary>铺满工作区时四角就是屏幕角，贴边的几个面得跟着改回直角。</summary>
+    void ApplyCornerRadii(double r)
+    {
+        if (Math.Abs(r - _cornerRadii) < 0.5) return;
+        _cornerRadii = r;
+
+        var left = new CornerRadius(r, 0, 0, r);
+        var right = new CornerRadius(0, r, r, 0);
+        var topRight = new CornerRadius(0, r, 0, 0);
+        var all = new CornerRadius(r);
+
+        SidebarSurface.CornerRadius = left;
+        SidebarGlass.CornerRadius = left;
+        SidebarVeil.CornerRadius = left;
+        ContentSurface.CornerRadius = right;
+        HeaderGlass.CornerRadius = topRight;
+        HeaderVeilBorder.CornerRadius = topRight;
+        EditorScrim.CornerRadius = all;
+        SettingsScrim.CornerRadius = all;
     }
 
     void OnZoomHostResized(object sender, SizeChangedEventArgs e) => ApplyZoom();
@@ -207,13 +273,53 @@ public sealed partial class MainWindow : Window
         src.SetRegionRects(Microsoft.UI.Input.NonClientRegionKind.RightBorder, new[] { R(w - b, 0, b, h) });
         src.SetRegionRects(Microsoft.UI.Input.NonClientRegionKind.TopBorder, new[] { R(b, 0, w - 2 * b, b) });
         src.SetRegionRects(Microsoft.UI.Input.NonClientRegionKind.BottomBorder, new[] { R(b, h - b, w - 2 * b, b) });
+
+        ApplyCaptionHoles();
     }
+
+    /// <summary>
+    /// 把标题栏里的控件从 caption 命中区里挖出来。DragBar 整条都是系统标题栏，
+    /// 落在里面的控件收不到鼠标：红绿灯和侧栏按钮点不动，按钮条的缝隙还会被当成
+    /// 标题栏双击而触发最大化。Passthrough 要的是物理像素、相对客户区的矩形。
+    /// </summary>
+    void ApplyCaptionHoles()
+    {
+        var rects = new List<Windows.Graphics.RectInt32>();
+        foreach (var e in new FrameworkElement[] { TrafficLights, SidebarToggleButton, ToolButtons })
+        {
+            if (e.ActualWidth < 2 || e.ActualHeight < 2) continue;
+            var b = e.TransformToVisual(null).TransformBounds(
+                new Windows.Foundation.Rect(0, 0, e.ActualWidth, e.ActualHeight));
+            rects.Add(new Windows.Graphics.RectInt32(
+                (int)Math.Floor(b.X * _captionScale),
+                (int)Math.Floor(b.Y * _captionScale),
+                (int)Math.Ceiling(b.Width * _captionScale),
+                (int)Math.Ceiling(b.Height * _captionScale)));
+        }
+        if (rects.Count == 0) return;
+
+        // LayoutUpdated 每帧都会跑，动画期间这些矩形其实没动，比对一下再决定要不要下发。
+        // RectInt32 没有重写 ToString，拼字符串必须自己取值，否则去重永远命中。
+        var key = string.Join(" ", rects.ConvertAll(r => $"{r.X},{r.Y} {r.Width}x{r.Height}"));
+        if (key == _captionRects) return;
+        _captionRects = key;
+
+        Microsoft.UI.Input.InputNonClientPointerSource.GetForWindowId(AppWindow.Id)
+            .SetRegionRects(Microsoft.UI.Input.NonClientRegionKind.Passthrough, rects.ToArray());
+    }
+
+    string _captionRects = "";
+
+    double _captionScale => WindowChrome.DpiScale(_hwnd);
+
+    void OnRootLayoutUpdated(object? sender, object e) => ApplyCaptionHoles();
 
     void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
     {
+        if (args.DidSizeChange || args.DidPositionChange) RequestIslandAlign();
         if (args.DidSizeChange) ApplyResizeRegions();
         var maxed = sender.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Maximized };
-        TrafficMax.Content = maxed ? Icons.ChromeRestore : Icons.ChromeMaximize;
+        TrafficMax.Content = maxed ? Icons.Shrink : Icons.Expand;
     }
 
     void OnVmChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -239,7 +345,7 @@ public sealed partial class MainWindow : Window
                     RootGrid.UpdateLayout();
                     if (_wordsShift is not null)
                         _wordsShift.X = _freezeStartTranslateX + (_freezeStartSidebarWidth - Vm.SidebarWidth);
-                        if (SidebarAtRest()) EndSidebarFreeze();
+                    if (SidebarAtRest()) EndSidebarFreeze();
                 }
                 break;
         }
@@ -742,17 +848,20 @@ public sealed partial class MainWindow : Window
         ShowLanguageMenu(node, (FrameworkElement)sender, e.GetPosition((FrameworkElement)sender));
     }
 
+    /// <summary>代码里现建的图标：FontIcon 默认吃系统符号字体，这里要显式指到 SF Pro 的符号区。</summary>
+    static FontIcon Glyph(string code) => new() { Glyph = code, FontFamily = Icons.Font };
+
     void ShowLanguageMenu(LangNode? node, FrameworkElement anchor, Windows.Foundation.Point position)
     {
         var menu = new MenuFlyout();
 
-        var edit = new MenuFlyoutItem { Text = "Rename / change flag", Icon = new FontIcon { Glyph = Icons.Edit }, IsEnabled = node is not null };
+        var edit = new MenuFlyoutItem { Text = "Rename / change flag", Icon = Glyph(Icons.Edit), IsEnabled = node is not null };
         edit.Click += async (_, _) => await EditLanguageAsync(node);
 
-        var add = new MenuFlyoutItem { Text = "New language", Icon = new FontIcon { Glyph = Icons.Add } };
+        var add = new MenuFlyoutItem { Text = "New language", Icon = Glyph(Icons.Plus) };
         add.Click += async (_, _) => await EditLanguageAsync(null);
 
-        var remove = new MenuFlyoutItem { Text = "Delete language", Icon = new FontIcon { Glyph = Icons.Delete }, IsEnabled = node is not null };
+        var remove = new MenuFlyoutItem { Text = "Delete language", Icon = Glyph(Icons.Delete), IsEnabled = node is not null };
         remove.Click += async (_, _) =>
         {
             if (node is null) return;
@@ -836,6 +945,7 @@ public sealed partial class MainWindow : Window
 
     void OnWordItemClick(object sender, ItemClickEventArgs e)
     {
+        PanLog($"ItemClick panActive={_rowPanActive}"); // TEMP DIAG
         if (e.ClickedItem is not WordView view || view.IsPlaceholder) return;
         if (view.Model is { } model)
         {
@@ -862,7 +972,7 @@ public sealed partial class MainWindow : Window
 
         var menu = new MenuFlyout();
 
-        var edit = new MenuFlyoutItem { Text = "Edit", Icon = new FontIcon { Glyph = Icons.Edit } };
+        var edit = new MenuFlyoutItem { Text = "Edit", Icon = Glyph(Icons.Edit) };
         edit.Click += (_, _) =>
         {
             if (view.Model is not null)
@@ -872,7 +982,7 @@ public sealed partial class MainWindow : Window
             }
         };
 
-        var del = new MenuFlyoutItem { Text = "Delete", Icon = new FontIcon { Glyph = Icons.Delete } };
+        var del = new MenuFlyoutItem { Text = "Delete", Icon = Glyph(Icons.Delete) };
         del.Click += (_, _) =>
         {
             if (view.Model is { } model) Vm.Delete(model);
@@ -881,6 +991,102 @@ public sealed partial class MainWindow : Window
         menu.Items.Add(edit);
         menu.Items.Add(del);
         menu.ShowAt((FrameworkElement)sender, e.GetPosition((FrameworkElement)sender));
+    }
+
+    // ------------------------------------------------------------ 列表行横向拖动
+
+    /// <summary>按下后指针走出这个数才开始平移——否则单击选词会被吃掉。</summary>
+    const double RowPanThreshold = 4;
+
+    ScrollViewer? _rowPanStrip;
+    Windows.Foundation.Point _rowPanAnchor;
+    double _rowPanStartOffset;
+    bool _rowPanActive;
+
+    // TEMP DIAG：横向拖动不生效，先看是哪个守卫拦下的。
+    static void PanLog(string s)
+    {
+        if (Environment.GetEnvironmentVariable("WORDBOOK_PANLOG") is not string path) return;
+        try { System.IO.File.AppendAllText(path, s + "\n"); } catch { }
+    }
+
+    /// <summary>
+    /// 带子的最小宽度钉在可视宽度上：元素少时中间那列 * 把富余吃掉，排版和以前一样；
+    /// 元素多到超过可视宽度时带子按自然宽度铺开，横向滚动随之可用。
+    /// 用 SizeChanged 而不是 x:Bind ViewportWidth——模板里的 x:Bind 指到同模板元素
+    /// 会让 XamlCompiler 在 Pass2 直接内部崩溃。
+    /// </summary>
+    void OnRowStripSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (sender is ScrollViewer { Content: Grid inner }) inner.MinWidth = e.NewSize.Width;
+    }
+
+    /// <summary>
+    /// 从命中元素往上找那一行的横向带子。列表自己的纵向 ScrollViewer 的
+    /// HorizontalScrollMode 是 Disabled，靠这个区分开。
+    /// </summary>
+    static ScrollViewer? RowStripAt(DependencyObject? d)
+    {
+        while (d is not null)
+        {
+            if (d is ScrollViewer { HorizontalScrollMode: ScrollMode.Enabled } sv) return sv;
+            d = VisualTreeHelper.GetParent(d);
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// 按下挂在带子的内容 Grid 上（事件从文字往上冒，先经过这里，ListViewItem 还没来得及
+    /// 把它标成已处理），移动和抬起挂在 RowList 上。反过来不行：ListViewItem 在 Pressed 里
+    /// 既抢指针又把事件标成已处理，带子收不到后续 PointerMoved，列表又收不到那次按下
+    /// ——实测两处各挂一半才跑得通。坐标一律以带子为参照，从哪个元素算都一样。
+    /// </summary>
+    void OnRowStripPanPressed(object sender, PointerRoutedEventArgs e)
+    {
+        _rowPanStrip = null;
+        var found = sender is Grid g ? RowStripAt(g) : null;
+        var extent = found is null ? "n/a" : $"{found.ExtentWidth:0.#}/{found.ViewportWidth:0.#}";
+        PanLog($"Pressed sender={sender.GetType().Name} strip={(found is null ? "null" : "found")} " +
+            $"scrollable={(found?.ScrollableWidth ?? -1):0.#} hsm={found?.HorizontalScrollMode} extent={extent}");
+        if (sender is not Grid grid || RowStripAt(grid) is not { } strip || strip.ScrollableWidth <= 0) return;
+        if (!e.GetCurrentPoint(strip).Properties.IsLeftButtonPressed) return;
+
+        _rowPanStrip = strip;
+        _rowPanAnchor = e.GetCurrentPoint(strip).Position;
+        _rowPanStartOffset = strip.HorizontalOffset;
+        _rowPanActive = false;
+        PanLog($"Pressed scrollable={strip.ScrollableWidth:0.#} anchorX={_rowPanAnchor.X:0.#}");
+    }
+
+    void OnRowStripPanMoved(object sender, PointerRoutedEventArgs e)
+    {
+        // TEMP DIAG：守卫之前先记一行，用来分清「Moved 根本没冒上来」和「上来了但被守卫拦下」。
+        PanLog($"Moved enter strip={_rowPanStrip is not null} " +
+            $"btn={e.GetCurrentPoint(sender as UIElement).Properties.IsLeftButtonPressed}");
+        if (_rowPanStrip is not ScrollViewer strip) return;
+        if (!e.GetCurrentPoint(strip).Properties.IsLeftButtonPressed) return;
+
+        var x = e.GetCurrentPoint(strip).Position.X;
+        if (!_rowPanActive && Math.Abs(x - _rowPanAnchor.X) < RowPanThreshold) return;
+
+        _rowPanActive = true;
+        var to = _rowPanStartOffset - (x - _rowPanAnchor.X);
+        strip.ChangeView(to, null, null, true);
+        PanLog($"Moved x={x:0.#} want={to:0.#} actual={strip.HorizontalOffset:0.#} ext={strip.ExtentWidth:0.#} vp={strip.ViewportWidth:0.#}");
+    }
+
+    void OnRowStripPanEnded(object sender, PointerRoutedEventArgs e) => _rowPanStrip = null;
+
+    /// <summary>
+    /// 拖过的那一下不能再算成点击：ListView 的 ItemClick 由容器的 Tapped 驱动，
+    /// 所以在这里把 Tapped 吃掉，松开指针就不会顺手把编辑弹窗打开。
+    /// 标记留到这里才清——Pressed 每次都会重置它。
+    /// </summary>
+    void OnRowStripTapped(object sender, TappedRoutedEventArgs e)
+    {
+        PanLog($"Tapped active={_rowPanActive} handled->{(_rowPanActive ? "yes" : "no")}");
+        if (_rowPanActive) e.Handled = true;
+        _rowPanActive = false;
     }
 
     void OnAddTileTapped(object sender, TappedRoutedEventArgs e)
@@ -972,6 +1178,84 @@ public sealed partial class MainWindow : Window
         AnimateWordsIn();
     }
 
+    Flyout? _fieldMenu;
+    readonly Dictionary<string, TextBlock> _fieldTicks = [];
+
+    /// <summary>右键：挑卡片里显示哪些字段；左键仍是原来的“只看单词”开关。</summary>
+    void OnFocusRightTapped(object sender, RightTappedRoutedEventArgs e)
+    {
+        e.Handled = true;
+        ShowFieldMenu((FrameworkElement)sender);
+    }
+
+    /// <summary>
+    /// 用普通 Flyout 而不是 MenuFlyout：MenuFlyout 一点条目就自己收起，
+    /// 这里要的是只有点到弹层外面才关，好连着勾掉或勾回好几个字段。
+    /// </summary>
+    void ShowFieldMenu(FrameworkElement anchor)
+    {
+        if (_fieldMenu is null)
+        {
+            var rows = new StackPanel { Spacing = 1, MinWidth = 196, Margin = new Thickness(4) };
+            var rowStyle = (Style)Application.Current.Resources["CardFieldRow"];
+            var accent = ThemeBrush("Accent", "#FF0A7CFF");
+
+            foreach (var (key, label) in CardField.Menu)
+            {
+                var tick = new TextBlock
+                {
+                    FontFamily = Icons.Font,
+                    FontSize = 12,
+                    Foreground = accent,
+                    Text = Icons.Check,
+                    Width = 15,
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
+                _fieldTicks[key] = tick;
+
+                var row = new Button
+                {
+                    Style = rowStyle,
+                    Tag = key,
+                    Content = new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Spacing = 8,
+                        Children =
+                        {
+                            tick,
+                            new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center },
+                        },
+                    },
+                };
+                row.Click += OnCardFieldRowClick;
+                rows.Children.Add(row);
+            }
+
+            _fieldMenu = new Flyout
+            {
+                Content = rows,
+                Placement = Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.BottomEdgeAlignedRight,
+                AllowFocusOnInteraction = false,
+            };
+        }
+
+        // 勾常驻占位，隐藏时只把透明度归零，行宽不会跳。
+        foreach (var (key, _) in CardField.Menu)
+            _fieldTicks[key].Opacity = Vm.IsCardFieldShown(key) ? 1 : 0;
+
+        _fieldMenu.ShowAt(anchor);
+    }
+
+    void OnCardFieldRowClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string key }) return;
+        var shown = !Vm.IsCardFieldShown(key);
+        Vm.SetCardFieldShown(key, shown);
+        _fieldTicks[key].Opacity = shown ? 1 : 0;
+        AnimateWordsIn();
+    }
+
     void OnToggleSearch(object sender, RoutedEventArgs e)
     {
         var show = !_searchOpen;
@@ -980,12 +1264,32 @@ public sealed partial class MainWindow : Window
         UpdateToolStates();
     }
 
+    /// <summary>开着的工具：底色淡蓝、图标换实心/斜杠版并上主题色；关着的回到样式默认色。</summary>
     void UpdateToolStates()
     {
-        FocusButton.Background = Vm.FocusMode ? _toolActive : null;
-        SearchButton.Background = _searchOpen ? _toolActive : null;
-        AdaptiveButton.Background = Vm.Adaptive ? _toolActive : null;
-        LayoutButton.Background = null;
+        var accent = ThemeBrush("Accent", "#FF0A7CFF");
+        FocusButton.Content = Vm.FocusMode ? Icons.EyeSlash : Icons.Eye;
+        AdaptiveButton.Content = Vm.Adaptive ? Icons.AdaptiveOn : Icons.AdaptiveOff;
+
+        SetToolState(FocusButton, Vm.FocusMode, accent);
+        SetToolState(SearchButton, _searchOpen, accent);
+        SetToolState(AdaptiveButton, Vm.Adaptive, accent);
+    }
+
+    /// <summary>
+    /// 关掉状态要用 ClearValue 撤掉本地值。给 Background / Foreground 直接赋 null 会把属性标成
+    /// “显式的空”，ContentPresenter 继承到空画刷之后整个字形都不再绘制（图标直接消失，不是变灰）。
+    /// </summary>
+    void SetToolState(Button button, bool on, Brush accent)
+    {
+        if (on)
+        {
+            button.Background = _toolActive;
+            button.Foreground = accent;
+            return;
+        }
+        button.ClearValue(Control.BackgroundProperty);
+        button.ClearValue(Control.ForegroundProperty);
     }
 
     void OnSearchChanged(object sender, TextChangedEventArgs e) => Vm.Search = SearchBox.Text;

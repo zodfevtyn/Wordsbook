@@ -34,9 +34,9 @@
                     HorizontalAlignment="Right"
                     Background="{ThemeResource Accent}"
                     Click="OnClose"
-                    Content="&#xE711;"
+                    Content="&#x100184;"
                     FontFamily="{StaticResource AppIconFont}"
-                    FontSize="10"
+                    FontSize="11"
                     Foreground="White">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">

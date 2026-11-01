@@ -5,15 +5,28 @@ using Wordsbook.Models;
 
 namespace Wordsbook.ViewModels;
 
+/// <summary>卡片里可以单独关掉的字段。专注模式之外，用户还能用眼睛菜单逐个隐藏。</summary>
+public readonly record struct CardFields(
+    bool Nature,
+    bool Pos,
+    bool Meaning,
+    bool Pronunciation,
+    bool Variants,
+    bool Description,
+    bool Mark)
+{
+    public static readonly CardFields All = new(true, true, true, true, true, true, true);
+
+    /// <summary>细节区是否还有东西可显示：全关掉时整块直接收起，不留一段空白。</summary>
+    public bool AnyDetail => Meaning || Pronunciation || Variants || Description || Mark;
+}
+
 /// <summary>右侧单词卡片 / 列表行的视图模型，也承载末尾的“+”占位块。</summary>
 public sealed class WordView : NotifyBase
 {
     static readonly SolidColorBrush Green = Hex("#34C759");
     static readonly SolidColorBrush Orange = Hex("#FF9F0A");
     static readonly SolidColorBrush Grey = Hex("#98989D");
-
-    static readonly FontFamily Icon = new("Segoe Fluent Icons");
-    static readonly FontFamily Display = new("SF Pro Display");
 
     static SolidColorBrush Hex(string s) =>
         new(ColorHelper.FromArgb(0xFF,
@@ -38,43 +51,69 @@ public sealed class WordView : NotifyBase
 
     string _pronunciation = "";
     public string Pronunciation { get => _pronunciation; set => Set(ref _pronunciation, value); }
-    public Visibility PronunciationVisibility => _pronunciation.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
 
     string _description = "";
     public string Description { get => _description; set => Set(ref _description, value); }
-    public Visibility DescriptionVisibility => string.IsNullOrWhiteSpace(_description) ? Visibility.Collapsed : Visibility.Visible;
 
     IReadOnlyList<RelatedForm> _relatedForms = [];
     public IReadOnlyList<RelatedForm> RelatedForms { get => _relatedForms; set => Set(ref _relatedForms, value); }
-    public Visibility RelatedFormsVisibility => _relatedForms.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
 
     string _related = "";
     public string Related { get => _related; set => Set(ref _related, value); }
 
     string _nature = "";
     public string Nature { get => _nature; set => Set(ref _nature, value); }
-    public Visibility NatureVisibility => _nature.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
 
     string _relatedUsage = "";
     public string RelatedUsage { get => _relatedUsage; set => Set(ref _relatedUsage, value); }
-    public Visibility RelatedUsageVisibility => _relatedUsage.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-
-
-    Visibility _extras = Visibility.Visible;
-    public Visibility Extras { get => _extras; set => Set(ref _extras, value); }
 
     string _markGlyph = "";
     public string MarkGlyph { get => _markGlyph; set => Set(ref _markGlyph, value); }
 
-    FontFamily _markFont = Display;
-    public FontFamily MarkFont { get => _markFont; set => Set(ref _markFont, value); }
+    Brush _markFill = Green;
+    public Brush MarkFill { get => _markFill; set => Set(ref _markFill, value); }
 
-    Microsoft.UI.Xaml.Media.Brush _markFill = Green;
-    public Microsoft.UI.Xaml.Media.Brush MarkFill { get => _markFill; set => Set(ref _markFill, value); }
+    // 可见性在 From() 里一次算好：改字段开关或专注模式都会重建整批视图。
+    bool _focus;
+    CardFields _fields = CardFields.All;
+
+    static Visibility Vis(bool on) => on ? Visibility.Visible : Visibility.Collapsed;
+
+    bool HasNature => _nature.Length > 0;
+    bool HasPos => _pos.Length > 0;
+    bool HasMeaning => !string.IsNullOrWhiteSpace(_meaning);
+    bool HasPron => _pronunciation.Length > 0;
+
+    /// <summary>词性小标跟着单词本体走，专注模式下也留着，它算单词的一部分。</summary>
+    public Visibility NatureVisibility => Vis(_fields.Nature && HasNature);
+
+    public Visibility PosVisibility => Vis(!_focus && _fields.Pos && HasPos);
+
+    public Visibility MetaVisibility => Vis(!_focus && ((_fields.Nature && HasNature) || (_fields.Pos && HasPos)));
+
+    public Visibility MeaningVisibility => Vis(!_focus && _fields.Meaning && HasMeaning);
+
+    public Visibility PronunciationVisibility => Vis(!_focus && _fields.Pronunciation && HasPron);
+
+    public Visibility RelatedVisibility => Vis(!_focus && _fields.Variants && _related.Length > 0);
+
+    public Visibility RelatedUsageVisibility => Vis(_relatedUsage.Length > 0);
+
+    public Visibility RelatedFormsVisibility => Vis(!_focus && _fields.Variants && _relatedForms.Count > 0);
+
+    public Visibility DescriptionVisibility =>
+        Vis(!_focus && _fields.Description && !string.IsNullOrWhiteSpace(_description));
+
+    public Visibility MarkVisibility => Vis(!_focus && _fields.Mark);
+
+    /// <summary>列表行里的记忆状态圆点不吃眼睛菜单的开关：行只留词头和这个状态点。</summary>
+    public Visibility RowMarkVisibility => Vis(!_focus);
+
+    public Visibility DetailVisibility => Vis(!_focus && _fields.AnyDetail);
 
     public static WordView Placeholder() => new() { IsPlaceholder = true };
 
-    public static WordView From(WordEntry e, bool focusMode)
+    public static WordView From(WordEntry e, bool focusMode, CardFields fields)
     {
         var (pos, meaning) = SplitPos(e.Meaning);
         var pron = e.Pronunciation.Trim();
@@ -97,9 +136,9 @@ public sealed class WordView : NotifyBase
             Related = string.Join("  ", forms.Select(f => f.Form)),
             Nature = e.Nature,
             RelatedUsage = e.RelatedUsage,
-            Extras = focusMode ? Visibility.Collapsed : Visibility.Visible,
-            MarkGlyph = e.Mark switch { 0 => Icons.Check, 2 => "!", _ => "?" },
-            MarkFont = e.Mark == 0 ? Icon : Display,
+            _focus = focusMode,
+            _fields = fields,
+            MarkGlyph = e.Mark switch { 0 => Icons.Check, 2 => Icons.Exclamation, _ => Icons.Question },
             MarkFill = e.Mark switch { 0 => Green, 2 => Orange, _ => Grey },
         };
     }

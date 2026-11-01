@@ -101,6 +101,35 @@ public sealed class AppViewModel : NotifyBase
         }
     }
 
+    /// <summary>眼睛菜单勾掉的字段还原成一份快照，卡片视图按它决定每段可见性。</summary>
+    public CardFields CardFieldsShown
+    {
+        get
+        {
+            bool On(string key) => !Data.Settings.HiddenCardFields.Contains(key);
+            return new CardFields(
+                On(CardField.Nature),
+                On(CardField.Pos),
+                On(CardField.Meaning),
+                On(CardField.Pronunciation),
+                On(CardField.Variants),
+                On(CardField.Description),
+                On(CardField.Mark));
+        }
+    }
+
+    public bool IsCardFieldShown(string key) => !Data.Settings.HiddenCardFields.Contains(key);
+
+    /// <summary>切换卡片某个字段的显示。菜单允许连着点，所以每次都落盘并重建视图。</summary>
+    public void SetCardFieldShown(string key, bool shown)
+    {
+        var hidden = Data.Settings.HiddenCardFields;
+        if (shown) hidden.Remove(key);
+        else if (!hidden.Contains(key)) hidden.Add(key);
+        _store.RequestSave();
+        RebuildWords();
+    }
+
     double _sidebarWidth = 300;
 
     /// <summary>侧栏当前宽度，折叠动画逐帧改这个值，两处列宽共用同一个源。</summary>
@@ -430,7 +459,7 @@ public sealed class AppViewModel : NotifyBase
 
         // 单日视图的日期已经在标题里，分组头留空；语言/月份/分类跨多天，按日期分段。
         var groups = new List<WordGroup>();
-        foreach (var g in list.Select(w => WordView.From(w, FocusMode)).GroupBy(v => v.Model!.Date))
+        foreach (var g in list.Select(w => WordView.From(w, FocusMode, CardFieldsShown)).GroupBy(v => v.Model!.Date))
             groups.Add(new WordGroup(_scope == ScopeKind.Day ? "" : GroupTitle(g.Key), g));
 
         if (groups.Count == 0) groups.Add(new WordGroup("", []));

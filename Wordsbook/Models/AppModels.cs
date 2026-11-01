@@ -107,6 +107,33 @@ public sealed class AppSettings
 
     /// <summary>侧栏展开时的宽度，读取方负责夹在 240..420 之间。</summary>
     public double SidebarWidth { get; set; } = 300;
+
+    /// <summary>眼睛菜单里被关掉的卡片字段，取值见 CardField；不在表里的都显示。</summary>
+    public List<string> HiddenCardFields { get; set; } = [];
+}
+
+/// <summary>卡片字段的稳定键名，直接写进 settings JSON，改名会让老配置失效。</summary>
+public static class CardField
+{
+    public const string Nature = "nature";
+    public const string Pos = "pos";
+    public const string Meaning = "meaning";
+    public const string Pronunciation = "pronunciation";
+    public const string Variants = "variants";
+    public const string Description = "description";
+    public const string Mark = "mark";
+
+    /// <summary>眼睛右键菜单按这个顺序建行。</summary>
+    public static readonly (string Key, string Label)[] Menu =
+    [
+        (Nature, "Nature"),
+        (Pos, "Part of speech"),
+        (Meaning, "Meaning"),
+        (Pronunciation, "Pronunciation"),
+        (Variants, "Variants"),
+        (Description, "Description"),
+        (Mark, "Status badge"),
+    ];
 }
 
 public sealed class AppData

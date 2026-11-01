@@ -10,6 +10,15 @@ obj/
 
 # Tools scratch
 tools/*.png
+/*.png
+tools/__pycache__/
+
+# 个人词库数据——仓库是公开的，这些导出件只留本地
+tools/cards.txt
+tools/review.txt
+tools/lines.json
+tools/wordsbook.import.json
+tools/import-report.txt
 
 # OS
 Thumbs.db

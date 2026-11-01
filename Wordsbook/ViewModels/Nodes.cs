@@ -42,7 +42,7 @@ public abstract class ExpandableNode : NotifyBase
 
     public Visibility ChildrenVisibility => _isExpanded ? Visibility.Visible : Visibility.Collapsed;
 
-    public string Chevron => _isExpanded ? "\uE70D" : "\uE76C";
+    public string Chevron => _isExpanded ? Icons.ChevronDown : Icons.ChevronRight;
 }
 
 public sealed class DayNode : NotifyBase
@@ -112,7 +112,23 @@ public sealed class CategoryNode : NotifyBase
     public string Count { get => _count; set => Set(ref _count, value); }
 
     bool _isSelected;
-    public bool IsSelected { get => _isSelected; set => Set(ref _isSelected, value); }
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set
+        {
+            if (Set(ref _isSelected, value))
+            {
+                Raise(nameof(TagOutlineVisibility));
+                Raise(nameof(TagFillVisibility));
+            }
+        }
+    }
+
+    /// <summary>选中行用实心标签 + 主题色，未选中用线框 + 三级灰。两层叠着切可见性，颜色才能留在主题字典里。</summary>
+    public Visibility TagOutlineVisibility => _isSelected ? Visibility.Collapsed : Visibility.Visible;
+
+    public Visibility TagFillVisibility => _isSelected ? Visibility.Visible : Visibility.Collapsed;
 }
 
 public sealed class CategoryGroupNode : ExpandableNode

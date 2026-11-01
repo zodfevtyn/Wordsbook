@@ -5,7 +5,8 @@ param(
     [switch]$Kill,
     [switch]$Screen,
     [switch]$NoPlace,
-    [switch]$KeepSize
+    [switch]$KeepSize,
+    [switch]$NoFocus
 )
 
 $ErrorActionPreference = "Stop"
@@ -93,12 +94,18 @@ if ($running.Count -eq 0) {
 if ($running.Count -eq 0) { throw "Wordsbook window never appeared" }
 
 $hwnd = $running[0].MainWindowHandle
-if ($KeepSize) { [Cap]::MoveOnly($hwnd, 60, 60) }
-elseif ($NoPlace) { [Cap]::Focus($hwnd) }
-else { [Cap]::Place($hwnd, 40, 40, 1500, 950) }
-Start-Sleep -Milliseconds $DelayMs
-[Cap]::Focus($hwnd)
-Start-Sleep -Milliseconds 900
+if ($NoFocus) {
+    # 只做 PrintWindow，不动位置也不抢焦点：用户正在别的窗口里干活时用这个
+    Start-Sleep -Milliseconds $DelayMs
+}
+else {
+    if ($KeepSize) { [Cap]::MoveOnly($hwnd, 60, 60) }
+    elseif ($NoPlace) { [Cap]::Focus($hwnd) }
+    else { [Cap]::Place($hwnd, 40, 40, 1500, 950) }
+    Start-Sleep -Milliseconds $DelayMs
+    [Cap]::Focus($hwnd)
+    Start-Sleep -Milliseconds 900
+}
 
 $rect = [Cap]::RectOf($hwnd)
 if ($rect.Width -lt 50 -or $rect.Height -lt 50) { throw "unexpected rect: $rect" }

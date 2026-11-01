@@ -18,13 +18,13 @@
                 x:Name="HeatPrev"
                 Grid.Column="2"
                 Click="OnPrev"
-                Content="&#xE76B;"
+                Content="&#x100189;"
                 Style="{StaticResource TinyIconButton}" />
             <Button
                 x:Name="HeatNext"
                 Grid.Column="3"
                 Click="OnNext"
-                Content="&#xE76C;"
+                Content="&#x100BFB;"
                 Style="{StaticResource TinyIconButton}" />
         </Grid>
 
