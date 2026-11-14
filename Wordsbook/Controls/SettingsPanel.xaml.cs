@@ -1,10 +1,11 @@
+using System.IO;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Wordsbook.ViewModels;
 
 namespace Wordsbook.Controls;
 
-/// <summary>设置浮层：外观主题、界面缩放、字体。改动通过 Changed 通知主窗口落地。</summary>
+/// <summary>设置浮层：外观主题、界面缩放、字体、贴边小条图片。改动通过 Changed 通知主窗口落地。</summary>
 public sealed partial class SettingsPanel : UserControl
 {
     AppViewModel? _vm;
@@ -12,6 +13,8 @@ public sealed partial class SettingsPanel : UserControl
 
     public event Action? Changed;
     public event Action? CloseRequested;
+    public event Action? ScreenCardImagePickRequested;
+    public event Action? ScreenCardImageClearRequested;
 
     public SettingsPanel() => InitializeComponent();
 
@@ -23,6 +26,9 @@ public sealed partial class SettingsPanel : UserControl
         (vm.Theme switch { "light" => ThemeLight, "dark" => ThemeDark, _ => ThemeSystem }).IsChecked = true;
         (vm.Scale switch { 1.5 => Scale15, 1.25 => Scale125, _ => Scale1 }).IsChecked = true;
         (vm.Font == "system" ? FontSystem : FontSf).IsChecked = true;
+        ScreenCardImageName.Text = string.IsNullOrEmpty(vm.ScreenCardImagePath)
+            ? "None - edge tab"
+            : Path.GetFileName(vm.ScreenCardImagePath);
 
         _syncing = false;
     }
@@ -46,4 +52,10 @@ public sealed partial class SettingsPanel : UserControl
     }
 
     void OnClose(object sender, RoutedEventArgs e) => CloseRequested?.Invoke();
+
+    void OnChooseScreenCardImage(object sender, RoutedEventArgs e) =>
+        ScreenCardImagePickRequested?.Invoke();
+
+    void OnClearScreenCardImage(object sender, RoutedEventArgs e) =>
+        ScreenCardImageClearRequested?.Invoke();
 }

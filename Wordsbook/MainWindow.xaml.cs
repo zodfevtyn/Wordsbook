@@ -46,6 +46,8 @@ public sealed partial class MainWindow : Window
 
     public AppViewModel Vm { get; }
 
+    ScreenCardWindow? _screenCard;
+
     readonly CollectionViewSource _gridGroups;
     readonly CollectionViewSource _rowGroups;
 
@@ -94,6 +96,10 @@ public sealed partial class MainWindow : Window
         };
         Settings.Changed += ApplySettings;
         Settings.CloseRequested += CloseSettings;
+        Settings.ScreenCardImagePickRequested += PickScreenCardImageAsync;
+        Settings.ScreenCardImageClearRequested += ClearScreenCardImage;
+        // 主窗口一关，置顶小窗会替应用续命，所以必须一起收掉。
+        Closed += (_, _) => _screenCard?.Close();
 
         ApplyTheme();
         UpdateLayoutButton();
@@ -742,6 +748,44 @@ public sealed partial class MainWindow : Window
         if (ReferenceEquals(sender, e.OriginalSource)) CloseSettings();
     }
 
+    // ------------------------------------------------------------ 置顶单词卡
+
+    void OnOpenScreenCard(object sender, RoutedEventArgs e)
+    {
+        if (_screenCard is null)
+        {
+            _screenCard = new ScreenCardWindow(Vm);
+            _screenCard.Closed += (_, _) =>
+            {
+                _screenCard = null;
+                UpdateToolStates();
+            };
+        }
+
+        _screenCard.Activate();
+        UpdateToolStates();
+    }
+
+    async void PickScreenCardImageAsync()
+    {
+        var picker = new Windows.Storage.Pickers.FileOpenPicker();
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, _hwnd);
+        foreach (var extension in new[] { ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp" })
+            picker.FileTypeFilter.Add(extension);
+
+        var file = await picker.PickSingleFileAsync();
+        if (file is null) return;
+
+        Vm.SetScreenCardImage(file.Path);
+        Settings.SyncFrom(Vm);
+    }
+
+    void ClearScreenCardImage()
+    {
+        Vm.SetScreenCardImage(null);
+        Settings.SyncFrom(Vm);
+    }
+
     void OnStartToday(object sender, RoutedEventArgs e)
     {
         Vm.StartToday();
@@ -1274,6 +1318,7 @@ public sealed partial class MainWindow : Window
         SetToolState(FocusButton, Vm.FocusMode, accent);
         SetToolState(SearchButton, _searchOpen, accent);
         SetToolState(AdaptiveButton, Vm.Adaptive, accent);
+        SetToolState(ScreenCardButton, _screenCard is not null, accent);
     }
 
     /// <summary>

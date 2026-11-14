@@ -596,6 +596,55 @@
         </Setter>
     </Style>
 
+    <!-- 设置里的小圆角按钮（Screen card 的 Choose / Clear） -->
+    <Style x:Key="SoftButton" TargetType="Button">
+        <Setter Property="Height" Value="28" />
+        <Setter Property="Padding" Value="12,0,12,0" />
+        <Setter Property="Background" Value="{ThemeResource FieldBg}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="FontFamily" Value="{StaticResource AppTextFont}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{ThemeResource TextPrimary}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}">
+                        <Grid>
+                            <Border x:Name="HoverTint" Background="{ThemeResource SelectedRow}" CornerRadius="{TemplateBinding CornerRadius}" Opacity="0" />
+                            <ContentPresenter
+                                Margin="{TemplateBinding Padding}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Content="{TemplateBinding Content}" />
+                        </Grid>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="HoverTint" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.1" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="PointerOver">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="HoverTint" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.08" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="HoverTint" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.05" />
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Disabled" />
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- 分类末尾的 + 圆形按钮 -->
     <Style x:Key="AddChipButton" TargetType="Button">
         <Setter Property="Width" Value="28" />

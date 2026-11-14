@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="Wordsbook.ScreenCardWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:models="using:Wordsbook.Models">
+
+    <!-- 基础 backdrop 给窗口一个透明底，真正的桌面 acrylic 放在内容里： -->
+    <!-- 这个 SDK 里 Window 级的 DesktopAcrylicBackdrop 不映射桌面，侧栏那种 -->
+    <!-- SystemBackdropElement 才是可用的做法。 -->
+    <Window.SystemBackdrop>
+        <MicaBackdrop Kind="Base" />
+    </Window.SystemBackdrop>
+
+    <Grid x:Name="Root" Background="Transparent">
+        <SystemBackdropElement x:Name="CardGlass">
+            <SystemBackdropElement.SystemBackdrop>
+                <DesktopAcrylicBackdrop />
+            </SystemBackdropElement.SystemBackdrop>
+        </SystemBackdropElement>
+
+        <!-- 圆角交给 DWM 原生处理，这里只铺底色；收起成图片时底色会被清掉 -->
+        <Border x:Name="Shell" Background="{ThemeResource ScreenCardTint}">
+
+            <Grid>
+                <!-- ==================== 展开态 ==================== -->
+                <Grid x:Name="ExpandedRoot">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="40" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- 整条标题就是拖拽区：按钮会把 PointerPressed 标成已处理，不会误触发拖动 -->
+                    <Grid
+                        x:Name="Header"
+                        Background="Transparent"
+                        PointerMoved="OnHeaderPointerMoved"
+                        PointerPressed="OnHeaderPointerPressed"
+                        PointerReleased="OnHeaderPointerReleased">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <Button
+                            x:Name="CloseButton"
+                            Margin="12,0,0,0"
+                            AutomationProperties.Name="Close card"
+                            Background="#FF5F57"
+                            BorderBrush="#26000000"
+                            Click="OnCloseClick"
+                            PointerEntered="OnCloseEnter"
+                            PointerExited="OnCloseExit"
+                            Style="{StaticResource TrafficButton}"
+                            ToolTipService.ToolTip="Close" />
+
+                        <Button
+                            x:Name="SettingsButton"
+                            Grid.Column="1"
+                            Width="24"
+                            Height="24"
+                            Margin="9,0,0,0"
+                            AutomationProperties.Name="Card settings"
+                            Click="OnOpenSettings"
+                            FontSize="12"
+                            Style="{StaticResource TinyIconButton}"
+                            ToolTipService.ToolTip="Card settings" />
+
+                        <TextBlock
+                            x:Name="StatusText"
+                            Grid.Column="2"
+                            Margin="9,0,6,0"
+                            VerticalAlignment="Center"
+                            FontFamily="{StaticResource AppTextFont}"
+                            FontSize="11"
+                            Foreground="{ThemeResource TextSecondary}"
+                            IsHitTestVisible="False"
+                            TextTrimming="CharacterEllipsis" />
+
+                        <Button
+                            x:Name="CollapseButton"
+                            Grid.Column="3"
+                            Width="24"
+                            Height="24"
+                            AutomationProperties.Name="Tuck to nearest edge"
+                            Click="OnCollapseClick"
+                            FontSize="11"
+                            Style="{StaticResource TinyIconButton}"
+                            ToolTipService.ToolTip="Tuck to the nearest screen edge" />
+                        <Button
+                            x:Name="PauseButton"
+                            Grid.Column="4"
+                            Width="24"
+                            Height="24"
+                            AutomationProperties.Name="Pause refresh"
+                            Click="OnTogglePause"
+                            FontSize="11"
+                            Style="{StaticResource TinyIconButton}"
+                            ToolTipService.ToolTip="Pause refresh" />
+                        <Button
+                            x:Name="NextButton"
+                            Grid.Column="5"
+                            Width="30"
+                            Height="24"
+                            Margin="0,0,8,0"
+                            AutomationProperties.Name="Next word"
+                            Click="OnNextClick"
+                            FontSize="13"
+                            Style="{StaticResource TinyIconButton}"
+                            ToolTipService.ToolTip="Next word" />
+                    </Grid>
+
+                    <ScrollViewer
+                        x:Name="CardScroll"
+                        Grid.Row="1"
+                        Padding="16,2,16,14"
+                        HorizontalScrollBarVisibility="Disabled"
+                        HorizontalScrollMode="Disabled"
+                        VerticalScrollBarVisibility="Auto"
+                        VerticalScrollMode="Auto">
+                        <StackPanel x:Name="CardBody" VerticalAlignment="Top" SizeChanged="OnCardBodySizeChanged">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="9">
+                                <TextBlock
+                                    x:Name="WordText"
+                                    FontFamily="{StaticResource AppRoundFont}"
+                                    FontSize="24"
+                                    FontWeight="Semibold"
+                                    Foreground="{ThemeResource Accent}"
+                                    TextWrapping="Wrap" />
+                                <StackPanel
+                                    Grid.Column="1"
+                                    Orientation="Horizontal"
+                                    Spacing="6"
+                                    VerticalAlignment="Bottom">
+                                    <TextBlock
+                                        x:Name="NatureText"
+                                        FontFamily="{StaticResource AppTextFont}"
+                                        FontSize="11"
+                                        Foreground="{ThemeResource TextTertiary}"
+                                        VerticalAlignment="Bottom" />
+                                    <TextBlock
+                                        x:Name="PosText"
+                                        FontFamily="{StaticResource AppTextFont}"
+                                        FontSize="12"
+                                        Foreground="{ThemeResource TextSecondary}"
+                                        VerticalAlignment="Bottom" />
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock
+                                x:Name="MeaningText"
+                                Margin="0,5,0,0"
+                                FontFamily="{StaticResource AppTextFont}"
+                                FontSize="15"
+                                FontWeight="Medium"
+                                Foreground="{ThemeResource TextPrimary}"
+                                TextWrapping="Wrap" />
+
+                            <TextBlock
+                                x:Name="PronText"
+                                Margin="0,3,0,0"
+                                FontFamily="{StaticResource AppTextFont}"
+                                FontSize="13"
+                                Foreground="{ThemeResource TextSecondary}"
+                                TextWrapping="Wrap" />
+
+                            <StackPanel x:Name="VariantsPanel" Margin="0,13,0,0">
+                                <TextBlock Style="{StaticResource CardSectionLabel}" Text="VARIANTS" />
+                                <Grid
+                                    Margin="0,5,0,2"
+                                    ColumnDefinitions="*,84"
+                                    ColumnSpacing="10">
+                                    <TextBlock Style="{StaticResource CardSectionLabel}" Text="FORM" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        HorizontalAlignment="Right"
+                                        Style="{StaticResource CardSectionLabel}"
+                                        Text="NATURE" />
+                                </Grid>
+                                <ItemsControl x:Name="RelatedList" Margin="0,1,0,0">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="models:RelatedForm">
+                                            <Grid
+                                                Margin="0,2,0,2"
+                                                ColumnDefinitions="*,84"
+                                                ColumnSpacing="10">
+                                                <TextBlock
+                                                    FontFamily="{StaticResource AppTextFont}"
+                                                    FontSize="13"
+                                                    Foreground="{ThemeResource Accent}"
+                                                    Text="{x:Bind Form}"
+                                                    TextWrapping="Wrap" />
+                                                <TextBlock
+                                                    Grid.Column="1"
+                                                    FontFamily="{StaticResource AppTextFont}"
+                                                    FontSize="11"
+                                                    Foreground="{ThemeResource TextTertiary}"
+                                                    Text="{x:Bind Nature}"
+                                                    TextAlignment="Right"
+                                                    TextWrapping="Wrap"
+                                                    VerticalAlignment="Center" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <StackPanel x:Name="DescriptionPanel" Margin="0,13,0,0">
+                                <TextBlock Style="{StaticResource CardSectionLabel}" Text="DESCRIPTION" />
+                                <TextBlock
+                                    x:Name="DescriptionText"
+                                    Margin="0,3,0,0"
+                                    FontFamily="{StaticResource AppTextFont}"
+                                    FontSize="12.5"
+                                    Foreground="{ThemeResource TextSecondary}"
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <Grid Margin="0,13,0,0" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <TextBlock
+                                    x:Name="MetaText"
+                                    VerticalAlignment="Center"
+                                    FontFamily="{StaticResource AppTextFont}"
+                                    FontSize="11"
+                                    Foreground="{ThemeResource TextTertiary}"
+                                    TextWrapping="Wrap" />
+                                <Border
+                                    x:Name="MarkBadge"
+                                    Grid.Column="1"
+                                    Style="{StaticResource BadgeCircle}"
+                                    ToolTipService.ToolTip="Memory status">
+                                    <TextBlock
+                                        x:Name="MarkGlyph"
+                                        FontFamily="{StaticResource AppIconFont}"
+                                        FontSize="13"
+                                        Foreground="White"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" />
+                                </Border>
+                            </Grid>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <TextBlock
+                        x:Name="EmptyHint"
+                        Grid.Row="1"
+                        Margin="24,0,24,24"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        FontFamily="{StaticResource AppTextFont}"
+                        FontSize="13"
+                        Foreground="{ThemeResource TextSecondary}"
+                        Text="No words match the current filter."
+                        TextAlignment="Center"
+                        TextWrapping="Wrap"
+                        Visibility="Collapsed" />
+                </Grid>
+
+                <!-- ==================== 收起态：只留图片，没有底色 ==================== -->
+                <Grid
+                    x:Name="CollapsedRoot"
+                    Background="Transparent"
+                    Tapped="OnExpandTapped"
+                    ToolTipService.ToolTip="Click to expand"
+                    Visibility="Collapsed">
+                    <Grid>
+                        <Image
+                            x:Name="CollapsedImage"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            ImageFailed="OnCollapsedImageFailed"
+                            Stretch="Uniform"
+                            Visibility="Collapsed" />
+                        <Border
+                            x:Name="CollapsedFallback"
+                            Width="56"
+                            Height="96"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Background="{ThemeResource ScreenCardTab}"
+                            CornerRadius="16">
+                            <TextBlock
+                                x:Name="CollapseChevron"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                FontFamily="{StaticResource AppIconFont}"
+                                FontSize="16"
+                                Foreground="{ThemeResource Accent}" />
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

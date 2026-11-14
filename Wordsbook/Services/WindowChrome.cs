@@ -29,6 +29,7 @@ public static class WindowChrome
     [DllImport("user32.dll")] static extern bool GetClientRect(IntPtr hWnd, out RECT rect);
     [DllImport("user32.dll")] static extern uint GetDpiForWindow(IntPtr hWnd);
     [DllImport("user32.dll")] static extern bool ClientToScreen(IntPtr hWnd, ref POINT point);
+    [DllImport("user32.dll")] static extern bool GetCursorPos(out POINT point);
     [DllImport("user32.dll")] static extern int GetSystemMetricsForDpi(int index, uint dpi);
     [DllImport("user32.dll")] static extern bool IsZoomed(IntPtr hWnd);
     [DllImport("user32.dll")] static extern IntPtr CallWindowProc(IntPtr lpPrev, IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
@@ -36,6 +37,8 @@ public static class WindowChrome
     [DllImport("user32.dll")] static extern bool GetMonitorInfo(IntPtr monitor, ref MONITORINFO info);
     [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr hWnd, int attr, out RECT rect, int size);
     [DllImport("gdi32.dll")] static extern IntPtr CreateRoundRectRgn(int x1, int y1, int x2, int y2, int w, int h);
+    [DllImport("gdi32.dll")] static extern IntPtr CreateRectRgn(int x1, int y1, int x2, int y2);
+    [DllImport("gdi32.dll")] static extern IntPtr ExtCreateRegion(IntPtr xform, int count, IntPtr regionData);
     [DllImport("user32.dll")] static extern int SetWindowRgn(IntPtr hWnd, IntPtr hRgn, bool bRedraw);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string? cls, string? window);
 
@@ -50,6 +53,16 @@ public static class WindowChrome
 
     [StructLayout(LayoutKind.Sequential)]
     struct MONITORINFO { public int cbSize; public RECT rcMonitor; public RECT rcWork; public uint flags; }
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct RGNDATAHEADER
+    {
+        public int dwSize;
+        public int iType;
+        public int nCount;
+        public int nRgnSize;
+        public RECT rcBound;
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     struct MINMAXINFO
@@ -174,6 +187,108 @@ public static class WindowChrome
 
     /// <summary>AppWindow.Resize 收的是物理像素，先按窗口 DPI 换算再乘。</summary>
     public static double DpiScale(IntPtr hWnd) => GetDpiForWindow(hWnd) / 96.0;
+
+    /// <summary>拖拽小窗用：光标在屏幕上的物理像素位置，和目标窗口坐标同一套单位。</summary>
+    public static (int X, int Y) CursorPosition()
+    {
+        GetCursorPos(out var point);
+        return (point.X, point.Y);
+    }
+
+    /// <summary>让 DWM 用系统自带的圆角（收起态要直角，否则图片角会被切掉）。</summary>
+    public static void UseNativeCorners(IntPtr hWnd, bool round = true)
+    {
+        var preference = round ? 2 : 1; // DWMWCP_ROUND / DWMWCP_DONOTROUND
+        DwmSetWindowAttribute(hWnd, 33, ref preference, 4);
+    }
+
+    /// <summary>客户区尺寸（物理像素）。窗口边框占掉的那几像素要补回给内容，否则底部会被裁。</summary>
+    public static (int Width, int Height) ClientSize(IntPtr hWnd) =>
+        GetClientRect(hWnd, out var rect)
+            ? (rect.Right - rect.Left, rect.Bottom - rect.Top)
+            : (0, 0);
+
+    /// <summary>收起态只亮出图片所在的一块矩形，避免系统最小窗口宽度留下透明但可点的空白。</summary>
+    public static void ApplyRectRegion(IntPtr hWnd, int x, int y, int width, int height)
+    {
+        if (width < 1 || height < 1) return;
+        SetWindowRgn(hWnd, CreateRectRgn(x, y, x + width, y + height), true);
+    }
+
+    /// <summary>客户区相对窗口左上角的偏移。带系统边框的窗口，这块偏移里画的是白边，不能算进可见区域。</summary>
+    public static (int X, int Y) ClientOrigin(IntPtr hWnd)
+    {
+        var origin = new POINT();
+        if (!GetClientRect(hWnd, out _) || !ClientToScreen(hWnd, ref origin)
+            || !GetWindowRect(hWnd, out var window)) return (0, 0);
+        return (origin.X - window.Left, origin.Y - window.Top);
+    }
+
+    public static void ApplyRoundRectRegion(IntPtr hWnd, int x, int y, int width, int height,
+        double radiusDip, double dpi)
+    {
+        if (width < 1 || height < 1) return;
+        var diameter = Math.Max(1, (int)Math.Round(radiusDip * 2 * dpi));
+        SetWindowRgn(hWnd, CreateRoundRectRgn(x, y, x + width + 1, y + height + 1, diameter, diameter), true);
+    }
+
+    /// <summary>
+    /// 按像素矩形集合（窗口坐标）重建窗口区域。图片是带透明背景的 PNG，
+    /// 只有把透明像素从窗口区域里挖掉，桌面才能从图片周围透出来。
+    /// </summary>
+    public static void ApplyRegionRects(IntPtr hWnd, IReadOnlyList<(int X, int Y, int Width, int Height)> rects)
+    {
+        if (rects.Count == 0) return;
+
+        var headerSize = Marshal.SizeOf<RGNDATAHEADER>();
+        var rectSize = Marshal.SizeOf<RECT>();
+        var size = headerSize + rectSize * rects.Count;
+        var buffer = Marshal.AllocHGlobal(size);
+        try
+        {
+            var minX = int.MaxValue;
+            var minY = int.MaxValue;
+            var maxX = int.MinValue;
+            var maxY = int.MinValue;
+            for (var i = 0; i < rects.Count; i++)
+            {
+                var (x, y, width, height) = rects[i];
+                minX = Math.Min(minX, x);
+                minY = Math.Min(minY, y);
+                maxX = Math.Max(maxX, x + width);
+                maxY = Math.Max(maxY, y + height);
+
+                var rect = new RECT { Left = x, Top = y, Right = x + width, Bottom = y + height };
+                Marshal.StructureToPtr(rect, buffer + headerSize + rectSize * i, false);
+            }
+
+            var header = new RGNDATAHEADER
+            {
+                dwSize = headerSize,
+                iType = 1, // RDH_RECTANGLES
+                nCount = rects.Count,
+                nRgnSize = rectSize * rects.Count,
+                rcBound = new RECT { Left = minX, Top = minY, Right = maxX, Bottom = maxY },
+            };
+            Marshal.StructureToPtr(header, buffer, false);
+
+            var region = ExtCreateRegion(IntPtr.Zero, size, buffer);
+            if (region != IntPtr.Zero) SetWindowRgn(hWnd, region, true);
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(buffer);
+        }
+    }
+
+    public static void ClearRegion(IntPtr hWnd) => SetWindowRgn(hWnd, IntPtr.Zero, true);
+
+    /// <summary>去掉 DWM 沿窗口边缘画的那条 1px 描边（收起态的白边来源之一）。</summary>
+    public static void HideWindowBorder(IntPtr hWnd, bool hide)
+    {
+        var color = hide ? unchecked((int)0xFFFFFFFE) : unchecked((int)0xFFFFFFFF);
+        DwmSetWindowAttribute(hWnd, 34, ref color, 4);
+    }
 
     /// <summary>
     /// 窗口四角的真实裁剪半径（物理像素）。WinUI 3 的窗口是不透明的，元素圆角只能让

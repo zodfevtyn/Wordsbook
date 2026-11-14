@@ -39,6 +39,11 @@
             <!-- acrylic 的噪点层没法关，压一层薄实色在它上面把颗粒抹平 -->
             <SolidColorBrush x:Key="HeaderVeil" Color="#59F7F7F9" />
 
+            <!-- 悬浮单词卡：底色压得很淡，让桌面 acrylic 的模糊真正透出来 -->
+            <SolidColorBrush x:Key="ScreenCardTint" Color="#A6F4F4F7" />
+            <!-- 收起成小标签时没有图片，改用不透明底色，避免窗口默认黑底透出来 -->
+            <SolidColorBrush x:Key="ScreenCardTab" Color="#F4F4F7" />
+
             <!-- 日历默认跟随系统强调色（这台机器是橙色），统一成应用蓝 -->
             <SolidColorBrush x:Key="CalendarViewSelectedBorderBrush" Color="#0A7CFF" />
             <SolidColorBrush x:Key="CalendarViewSelectedHoverBorderBrush" Color="#0A7CFF" />
@@ -77,6 +82,9 @@
                 TintLuminosityOpacity="0.15"
                 FallbackColor="#F71B1B1F" />
             <SolidColorBrush x:Key="HeaderVeil" Color="#591B1B1F" />
+
+            <SolidColorBrush x:Key="ScreenCardTint" Color="#A61B1B20" />
+            <SolidColorBrush x:Key="ScreenCardTab" Color="#1B1B20" />
 
             <SolidColorBrush x:Key="CalendarViewSelectedBorderBrush" Color="#0A84FF" />
             <SolidColorBrush x:Key="CalendarViewSelectedHoverBorderBrush" Color="#0A84FF" />

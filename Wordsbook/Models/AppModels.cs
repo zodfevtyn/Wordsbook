@@ -110,6 +110,34 @@ public sealed class AppSettings
 
     /// <summary>眼睛菜单里被关掉的卡片字段，取值见 CardField；不在表里的都显示。</summary>
     public List<string> HiddenCardFields { get; set; } = [];
+
+    /// <summary>置顶单词卡小窗的内容筛选与外观。</summary>
+    public ScreenCardSettings ScreenCard { get; set; } = new();
+}
+
+/// <summary>
+/// 悬浮单词卡的持久化状态。Dates / CategoryIds 为空表示不限；LanguageId 为 null 表示所有语言。
+/// </summary>
+public sealed class ScreenCardSettings
+{
+    public string? LanguageId { get; set; }
+    public List<string> Dates { get; set; } = [];
+    public List<string> CategoryIds { get; set; } = [];
+
+    /// <summary>刷新间隔，只接受 1 / 3 / 5 分钟。</summary>
+    public int RefreshMinutes { get; set; } = 1;
+
+    /// <summary>false 为随机轮换，true 时优先抽未标记为已记住的词。</summary>
+    public bool ReviewMode { get; set; }
+
+    public bool Paused { get; set; }
+
+    /// <summary>收起成贴边小条时显示的图片；空串显示一个可展开的圆角标签。</summary>
+    public string CollapsedImagePath { get; set; } = "";
+
+    /// <summary>展开态左上角的屏幕物理像素坐标；null 表示首次打开，用默认位置。</summary>
+    public int? WindowX { get; set; }
+    public int? WindowY { get; set; }
 }
 
 /// <summary>卡片字段的稳定键名，直接写进 settings JSON，改名会让老配置失效。</summary>

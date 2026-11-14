@@ -36,4 +36,10 @@ public static class Icons
     public const string AdaptiveOff = "\U001001F4";
     public const string AdaptiveOn = "\U00100685";
     public const string Sidebar = "\U00100C31";
+
+    // 悬浮单词卡：叠放的两个圆角窗口 / 播放 / 暂停（字形已对照字体图确认）
+    public const string ScreenCard = "\U001003E7";
+    public const string Play = "\U00100284";
+    public const string Pause = "\U00100285";
+    public const string Dock = "\U00100C32";
 }

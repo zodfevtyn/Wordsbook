@@ -31,6 +31,10 @@ inflected forms, parts of speech and example sentences in one plain JSON file.
 - **Motion** — modal open/close, sidebar width, word-area transitions, search
   reveal, button hover and press feedback, and the add-card tile all animate on
   non-linear easing curves.
+- **Screen card** — a floating, always-on-top word card with real desktop
+  acrylic, filters for language / date / category, 1–3–5 minute refresh, review
+  order, pause and next controls, and an edge-tuck mode that shrinks to your own
+  transparent PNG, cut out to its silhouette.
 - **Chrome** — traffic-light buttons, rounded corners, drag-to-move, a resize
   splitter between sidebar and content, dark theme, and 1× / 1.25× / 1.5× zoom.
 

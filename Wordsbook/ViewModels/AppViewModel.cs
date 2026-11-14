@@ -130,6 +130,64 @@ public sealed class AppViewModel : NotifyBase
         RebuildWords();
     }
 
+    // ---------------------------------------------------------------- 悬浮单词卡
+
+    public ScreenCardSettings ScreenCard => Data.Settings.ScreenCard;
+
+    public string ScreenCardImagePath => ScreenCard.CollapsedImagePath;
+
+    /// <summary>卡片筛选/刷新间隔之类的小改动统一走这里落盘。</summary>
+    public void SaveScreenCard(Action<ScreenCardSettings> change)
+    {
+        change(ScreenCard);
+        _store.RequestSave();
+    }
+
+    /// <summary>
+    /// 把用户挑的图片复制进应用数据目录再记住路径：原图被移走或删掉时，
+    /// 收起后的小条不会跟着变成空白。传 null 清空。
+    /// </summary>
+    public void SetScreenCardImage(string? source)
+    {
+        var previous = ScreenCard.CollapsedImagePath;
+        var next = "";
+
+        if (!string.IsNullOrWhiteSpace(source))
+        {
+            try
+            {
+                Directory.CreateDirectory(Store.StoreDir);
+                var ext = Path.GetExtension(source);
+                if (string.IsNullOrEmpty(ext)) ext = ".png";
+                var destination = Path.Combine(Store.StoreDir, "screen-card" + ext.ToLowerInvariant());
+
+                if (!string.Equals(Path.GetFullPath(source), Path.GetFullPath(destination),
+                        StringComparison.OrdinalIgnoreCase))
+                    File.Copy(source, destination, overwrite: true);
+
+                next = destination;
+            }
+            catch
+            {
+                next = source;
+            }
+        }
+
+        ScreenCard.CollapsedImagePath = next;
+        if (previous.Length > 0 && !string.Equals(previous, next, StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                if (previous.StartsWith(Store.StoreDir, StringComparison.OrdinalIgnoreCase) && File.Exists(previous))
+                    File.Delete(previous);
+            }
+            catch { }
+        }
+
+        _store.RequestSave();
+        Raise(nameof(ScreenCardImagePath));
+    }
+
     double _sidebarWidth = 300;
 
     /// <summary>侧栏当前宽度，折叠动画逐帧改这个值，两处列宽共用同一个源。</summary>

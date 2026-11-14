@@ -1046,6 +1046,13 @@
                     </Border>
 
                     <Button
+                        x:Name="ScreenCardButton"
+                        AutomationProperties.Name="Word card on screen"
+                        Click="OnOpenScreenCard"
+                        Content="&#x1003E7;"
+                        Style="{StaticResource ToolButton}"
+                        ToolTipService.ToolTip="Word card on top of other windows" />
+                    <Button
                         x:Name="LayoutButton"
                         Click="OnToggleLayout"
                         Content="&#x1002F2;"

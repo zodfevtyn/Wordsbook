@@ -149,6 +149,51 @@
                 </Border>
             </StackPanel>
 
+            <StackPanel Spacing="6">
+                <TextBlock
+                    FontFamily="{StaticResource AppTextFont}"
+                    FontSize="12"
+                    Foreground="{ThemeResource TextSecondary}"
+                    Text="Screen card" />
+                <Border
+                    Background="{ThemeResource SegmentTrack}"
+                    CornerRadius="17"
+                    Padding="12,10">
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                        <StackPanel VerticalAlignment="Center" Spacing="1">
+                            <TextBlock
+                                FontFamily="{StaticResource AppTextFont}"
+                                FontSize="13"
+                                Foreground="{ThemeResource TextPrimary}"
+                                Text="Collapsed image" />
+                            <TextBlock
+                                x:Name="ScreenCardImageName"
+                                FontFamily="{StaticResource AppTextFont}"
+                                FontSize="11"
+                                Foreground="{ThemeResource TextTertiary}"
+                                Text="None - edge tab"
+                                TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <Button
+                            Grid.Column="1"
+                            Click="OnChooseScreenCardImage"
+                            Content="Choose..."
+                            Style="{StaticResource SoftButton}" />
+                        <Button
+                            Grid.Column="2"
+                            Click="OnClearScreenCardImage"
+                            Content="Clear"
+                            Style="{StaticResource SoftButton}" />
+                    </Grid>
+                </Border>
+                <TextBlock
+                    FontFamily="{StaticResource AppTextFont}"
+                    FontSize="11"
+                    Foreground="{ThemeResource TextTertiary}"
+                    Text="Shown while the card is tucked against a screen edge."
+                    TextWrapping="Wrap" />
+            </StackPanel>
+
         </StackPanel>
     </Border>
 </UserControl>
